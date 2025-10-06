@@ -1,0 +1,3346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>~*~ T H E V O R T E X ~*~ Chat Room</title>
+    <style>
+        /* Base 90s UI Styling */
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #008080; /* Teal/Desktop Background */
+            color: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden; /* Prevent scrollbars from appearing during drag */
+            position: relative;
+            
+            /* Background styles controlled by JS: */
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-attachment: fixed;
+            transition: background-color 0.5s ease;
+        }
+        /* CLASSIC_TEAL is default */
+        
+        /* Specific CSS Backgrounds for Wallpaper Options */
+        .cosmic-wallpaper {
+            background-color: #000000;
+            background-image: radial-gradient(circle at center, #000080 0%, #000000 100%);
+        }
+        
+        .geometric-wallpaper {
+            background-color: #008000;
+            /* Simple wavy geometric pattern using repeating gradient */
+            background-image: repeating-linear-gradient(45deg, #FF00FF 0, #FF00FF 10px, #00FF00 10px, #00FF00 20px),
+                              repeating-linear-gradient(-45deg, #00FFFF 0, #00FFFF 10px, #FFFF00 10px, #FFFF00 20px);
+            background-size: 40px 40px;
+            background-blend-mode: multiply;
+        }
+
+
+        /* 3D Bevel/Raised Effect for Windows */
+        .window-style {
+            background-color: #C0C0C0; /* Standard Windows 95 Gray */
+            border-top: 2px solid #FFFFFF;
+            border-left: 2px solid #FFFFFF;
+            border-right: 2px solid #808080;
+            border-bottom: 2px solid #808080;
+            box-shadow: 1px 1px 0 #000000;
+            padding: 8px;
+            margin-bottom: 0; /* Removed margin from style class as windows are now wrapped */
+        }
+
+        /* Sunken Effect for Input/Display Areas */
+        .sunken-style {
+            background-color: #FFFFFF;
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #FFFFFF;
+            border-bottom: 2px solid #FFFFFF;
+        }
+
+        /* Draggable Window Base Style */
+        .draggable-window {
+            position: absolute; /* Essential for dragging */
+            z-index: 100; /* Default stacking order */
+            cursor: default;
+        }
+        
+        /* --- Screensaver Styles --- */
+        #screensaver {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            display: none;
+            z-index: 6000;
+            overflow: hidden;
+            cursor: none;
+        }
+        
+        #bouncing-text {
+            position: absolute;
+            font-size: 40px;
+            color: #00FFFF;
+            font-weight: bold;
+            padding: 10px; /* Padding helps with bounce calculation */
+            transition: none;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 5px #00FFFF, 0 0 10px #00FFFF;
+        }
+        
+        #screensaver canvas {
+            display: block;
+        }
+        
+        .screensaver-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none; /* Controlled by JS based on type */
+        }
+        /* End Screensaver Styles */
+
+        /* New Loading Screen Styles */
+        #loading-screen {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 350px;
+            max-width: 90%;
+            text-align: left;
+            z-index: 1000; /* Ensure it is on top of everything */
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #progress-bar-container {
+            height: 20px;
+            width: 100%;
+            /* Sunken style for the container */
+            background-color: #FFFFFF;
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #FFFFFF;
+            border-bottom: 2px solid #FFFFFF;
+            padding: 2px; /* Inner padding to frame the fill */
+            box-sizing: border-box;
+        }
+
+        #progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            background-color: #000080; /* Blue progress fill */
+            transition: width 0.1s linear; /* Smooth visual update */
+        }
+        /* End Loading Screen Styles */
+
+        /* New Notification Toast Styles */
+        #notification-toast {
+            position: fixed;
+            top: -50px; /* Hidden initially, slides down to 10px */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            display: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #FFFFFF;
+            background-color: #000080; /* Blue background */
+            border: 2px solid #FFFFFF;
+            box-shadow: 4px 4px 0 #000000;
+            cursor: pointer;
+            transition: top 0.3s ease-in-out;
+        }
+        
+        /* --- Taskbar Styles --- */
+        #taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 30px;
+            z-index: 5000; /* Always on top */
+            padding: 0 5px;
+            box-sizing: border-box;
+            display: none; 
+            align-items: center;
+            gap: 8px;
+            /* Taskbar border is only on top/sides, not bottom */
+            border-bottom: none; 
+            border-right: 2px solid #808080;
+            /* NEW: Use flex properties to justify content */
+            justify-content: space-between; 
+        }
+
+        .taskbar-button {
+            height: 22px;
+            padding: 0 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            font-weight: bold;
+            /* 90s button style */
+            background-color: #C0C0C0;
+            border: 1px solid #000000;
+            border-top: 2px solid #FFFFFF;
+            border-left: 2px solid #FFFFFF;
+            border-right: 2px solid #808080;
+            border-bottom: 2px solid #808080;
+            cursor: pointer;
+            line-height: 18px;
+            box-sizing: border-box;
+        }
+
+        .taskbar-button:active {
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #FFFFFF;
+            border-bottom: 2px solid #FFFFFF;
+        }
+        /* --- End Taskbar Styles --- */
+
+        /* Specific window sizes/positions */
+        .main-chat-window {
+            width: 500px;
+            max-width: calc(100% - 40px);
+        }
+        .sidebar-window {
+            width: 200px;
+            max-width: calc(100% - 40px);
+        }
+        .email-window {
+            width: 600px;
+            max-width: calc(100% - 40px);
+        }
+        /* New message board size */
+        .message-board-window {
+             width: 650px;
+            max-width: calc(100% - 40px);
+        }
+        
+        /* Customization Window Size */
+        .customization-window {
+             width: 380px;
+            max-width: calc(100% - 40px);
+        }
+
+        h1 {
+            background-color: #000080; /* Windows 95 Title Bar Blue */
+            color: #FFFFFF;
+            font-size: 16px;
+            padding: 3px 5px;
+            /* Adjusted margin for window controls, default drag handle */
+            margin: -8px -8px 8px -8px; 
+            cursor: move; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 2px;
+        }
+
+        /* 90s Control Buttons (Minimize/Close) */
+        .control-btn {
+            width: 18px;
+            height: 18px;
+            padding: 0;
+            line-height: 14px;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 14px;
+            background-color: #C0C0C0;
+            border: 1px solid #000000;
+            border-top: 2px solid #FFFFFF;
+            border-left: 2px solid #FFFFFF;
+            border-right: 2px solid #808080;
+            border-bottom: 2px solid #808080;
+            cursor: pointer;
+        }
+
+        .control-btn.close-btn {
+            color: #FF0000;
+        }
+
+        .control-btn:active {
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #FFFFFF;
+            border-bottom: 2px solid #FFFFFF;
+        }
+
+        /* Minimize state */
+        .minimized #main-window-content,
+        .minimized #sidebar-window-content,
+        .minimized #email-window-content,
+        .minimized #message-board-window-content,
+        .minimized #customization-window-content {
+            display: none !important;
+        }
+        .minimized .window-style {
+            border-bottom: 2px solid #808080;
+            height: auto;
+        }
+
+        /* Chat Log & Input */
+        #chat-log {
+            height: 400px;
+            overflow-y: auto;
+            padding: 5px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .message-line {
+            white-space: pre-wrap;
+            word-break: break-word;
+            padding: 2px 0;
+            line-height: 1.2;
+        }
+        .username {
+            font-weight: bold;
+        }
+
+        /* Input area styling */
+        #input-message {
+            width: calc(100% - 70px);
+            padding: 3px;
+            margin-right: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        #send-button, #loading-indicator {
+            width: 60px;
+            height: 22px;
+            font-family: 'Courier New', monospace;
+            background-color: #C0C0C0;
+            border: 1px solid #000000;
+            border-top: 2px solid #FFFFFF;
+            border-left: 2px solid #FFFFFF;
+            border-right: 2px solid #808080;
+            border-bottom: 2px solid #808080;
+            cursor: pointer;
+            display: inline-block;
+            text-align: center;
+            line-height: 18px;
+            font-size: 12px;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        #loading-indicator {
+            cursor: default;
+            color: #8B0000;
+            animation: blink 1s step-end infinite;
+            display: none;
+        }
+        
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* User List */
+        #user-list {
+            height: 440px; /* Aligns with chat log + input height */
+            overflow-y: auto;
+            padding: 5px;
+            font-size: 14px;
+        }
+        .user-online {
+            padding: 1px 0;
+            /* New: Make usernames clickable */
+            cursor: pointer; 
+        }
+        
+        /* Email Specific Styles */
+        .email-list-pane {
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 8px;
+            padding: 5px;
+            border-right: 2px solid #808080;
+        }
+        .email-list-item {
+            padding: 4px;
+            border-bottom: 1px solid #C0C0C0;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 14px;
+        }
+        .email-list-item.unread {
+            font-weight: bold;
+            color: #8B0000; /* Red dot for unread status */
+        }
+        .email-list-item.sent {
+            font-style: italic;
+            color: #808080;
+        }
+        .email-detail-pane {
+            height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            /* Sunken style applied directly to detail pane */
+            background-color: #FFFFFF;
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #FFFFFF;
+            border-bottom: 2px solid #FFFFFF;
+        }
+        .email-detail-header {
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed #C0C0C0;
+        }
+        
+        /* Message Board Specific Styles */
+        .board-list-pane {
+            height: 350px; 
+            overflow-y: auto;
+            margin-bottom: 0; 
+            padding: 5px;
+            /* Resetting container styles that might interfere with 100% width */
+            border-right: none;
+        }
+        .board-list-item {
+            padding: 4px;
+            border-bottom: 1px solid #C0C0C0;
+            cursor: pointer;
+            /* Allow content to wrap slightly differently for buttons */
+            white-space: normal; 
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+        .board-list-item.new-post {
+            font-weight: bold;
+            color: #000080; /* Blue dot for new post */
+        }
+        
+        .thread-root {
+            padding: 10px;
+            border: 1px solid #D0D0D0;
+            background-color: #F0F0F0;
+            margin-bottom: 15px;
+        }
+
+        .thread-reply {
+            border-top: 1px dashed #C0C0C0;
+            padding: 8px 0;
+            margin-top: 10px;
+            margin-left: 15px;
+        }
+
+        .avatar {
+            font-weight: bold;
+            margin-right: 5px;
+            display: inline-block;
+            width: 25px; /* Fixed width for alignment */
+            text-align: center;
+        }
+        
+        /* Customization Preview Box */
+        #screensaver-preview {
+            width: 100%;
+            height: 100px;
+            margin-top: 8px;
+            background-color: #000000;
+            overflow: hidden;
+            position: relative;
+            /* Sunken style for preview */
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #FFFFFF;
+            border-bottom: 2px solid #FFFFFF;
+        }
+        
+        #preview-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #FFFFFF;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        /* Custom Checkbox/Label Alignment */
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .settings-row label {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+        .settings-row input[type="checkbox"] {
+            margin: 0;
+            width: 18px;
+            height: 18px;
+        }
+        .settings-row select {
+             width: 100px; /* fixed width for select box */
+        }
+        
+        /* Message Board List Item Layout */
+        .board-item-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+        .board-item-details {
+            display: flex;
+            flex-grow: 1;
+            align-items: center;
+            overflow: hidden;
+        }
+        .board-item-meta {
+            margin-left: 10px;
+            text-align: right;
+            white-space: nowrap;
+        }
+        .board-item-controls {
+            display: flex;
+            align-items: center;
+            margin-left: 15px;
+        }
+
+
+        /* Responsive adjustments (Ensure windows don't go off screen) */
+        @media (max-width: 768px) {
+            .main-chat-window {
+                left: 50% !important;
+                top: 20px !important;
+                transform: translateX(-50%);
+            }
+            .sidebar-window {
+                left: 50% !important;
+                top: 400px !important; /* Stack below main window */
+                transform: translateX(-50%);
+            }
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- HIDDEN AUDIO ELEMENT FOR DIAL-UP SOUND -->
+    <audio id="dialUpAudio" src="http://googleusercontent.com/file_content/1" preload="auto"></audio>
+
+    <!-- SCREENSAVER ELEMENT -->
+    <div id="screensaver" style="display: none;">
+        <!-- Bouncing Text -->
+        <div id="bouncing-text-screensaver" class="screensaver-content">
+            <div id="bouncing-text">R E T R O C L I E N T</div>
+        </div>
+        
+        <!-- Flying Windows / Starfield (Canvas) -->
+        <canvas id="screensaver-canvas" class="screensaver-content"></canvas>
+    </div>
+    
+    <!-- Notification Toast (New Mail/Board Alert) -->
+    <div id="notification-toast" class="window-style" onclick="handleNotificationClick()">
+        [Notification Message]
+    </div>
+
+    <!-- New Loading Screen -->
+    <div id="loading-screen" class="window-style" style="display: none;">
+        <h1 class="drag-handle" style="cursor: default; margin: -15px -15px 15px -15px; padding: 5px;">
+            <span class="title-text">Connecting to Internet Service Provider...</span>
+        </h1>
+        <div style="font-size: 14px; padding: 0 5px;">
+            <p><strong>Status:</strong> Dialing **555-0199**...</p>
+            <p id="loading-message">Initializing system...</p>
+        </div>
+        
+        <div id="progress-bar-container">
+            <div id="progress-bar-fill"></div>
+        </div>
+    </div>
+    
+    <!-- New Username Prompt Screen -->
+    <div id="username-prompt-screen" class="window-style" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; padding: 15px; text-align: center; z-index: 4000; display: none;">
+        <h1 class="drag-handle" style="cursor: default; margin: -15px -15px 15px -15px; padding: 5px;">
+            <span class="title-text">RetroClient Login</span>
+        </h1>
+        <div style="font-size: 14px; padding: 0 5px;">
+            <p>Welcome! Please enter your desired screen name.</p>
+            <input type="text" id="user-screen-name" class="sunken-style" placeholder="Screen Name (e.g., CoolDude99)" maxlength="15" style="width: 90%; margin: 10px 0; padding: 5px; box-sizing: border-box;">
+        </div>
+        <button id="login-button" class="enter-button" style="width: 120px; height: 25px; font-size: 12px; line-height: 20px; margin-top: 10px;" onclick="setUserNameAndStart()">
+            Log In
+        </button>
+        <p style="font-size: 10px; margin-top: 10px; color: #808080;">(Max 15 characters, letters/numbers only)</p>
+    </div>
+
+    <!-- Main Chat Area (Draggable Window) -->
+    <div class="draggable-window main-chat-window" id="main-chat-window" style="left: 100px; top: 50px; display: none;">
+        <div class="window-style">
+            <h1 class="drag-handle">
+                <span id="main-title" class="title-text">~ T H E V O R T E X ~ Chat Log</span>
+                <span class="window-controls">
+                    <button class="control-btn" onclick="toggleMinimize('main-chat-window')">_</button>
+                    <button class="control-btn close-btn" onclick="hideWindow('main-chat-window')">X</button>
+                </span >
+            </h1>
+            <div id="main-window-content">
+                <div id="room-selector-area" class="window-style" style="margin-bottom: 8px; padding: 5px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <label for="room-select">Switch Room:</label>
+                        <select id="room-select" onchange="switchRoom(this.value)" class="sunken-style" style="font-family: 'Courier New', monospace; padding: 2px;">
+                            <!-- Options generated by JS -->
+                        </select>
+                    </div>
+                    <!-- DISCONNECT BUTTON (Now logs off) -->
+                    <button class="enter-button" style="width: 100px; height: 25px; font-size: 12px; line-height: 20px; margin: 0;" onclick="goToHub()">
+                        Log Off
+                    </button>
+                </div>
+
+                <div id="chat-log" class="sunken-style">
+                    <!-- Messages will be appended here -->
+                </div>
+                <div style="display: flex;">
+                    <input type="text" id="input-message" class="sunken-style" placeholder="Type message here...">
+                    <button id="send-button" onclick="postUserMessage()">Send</button>
+                    <div id="loading-indicator">WAIT...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User List Sidebar (Draggable Window) -->
+    <div class="draggable-window sidebar-window" id="sidebar-window" style="left: 650px; top: 50px; display: none;">
+        <div class="window-style">
+             <h1 class="drag-handle">
+                <span id="user-list-title" class="title-text">Online Users (0)</span>
+                <span class="window-controls">
+                    <button class="control-btn" onclick="toggleMinimize('sidebar-window')">_</button>
+                    <button class="control-btn close-btn" onclick="hideWindow('sidebar-window')">X</button>
+                </span>
+            </h1>
+            <div id="sidebar-window-content">
+                <div id="user-list" class="sunken-style">
+                    <!-- Users will be appended here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- E-mail Client (Draggable Window) -->
+    <div class="draggable-window email-window" id="email-window" style="left: 150px; top: 150px; display: none;">
+        <div class="window-style">
+            <h1 class="drag-handle">
+                <span id="email-title" class="title-text">Mailbox - Inbox (0 Unread)</span>
+                <span class="window-controls">
+                    <button class="control-btn" onclick="toggleMinimize('email-window')">_</button>
+                    <button class="control-btn close-btn" onclick="closeEmail()">X</button>
+                </span>
+            </h1>
+            <div id="email-window-content">
+                <!-- INBOX VIEW -->
+                <div id="email-inbox-view" style="display: block;">
+                    <div style="display: flex; gap: 8px;">
+                        <!-- Email List Pane -->
+                        <div class="window-style sunken-style email-list-pane" style="width: 40%;">
+                            <div id="email-list">
+                                <!-- Email list items appended here -->
+                            </div>
+                        </div>
+                        <!-- Email Detail Pane -->
+                        <div style="width: 60%;">
+                            <div id="email-detail-pane" class="email-detail-pane">
+                                Select an email from the left pane.
+                            </div>
+                        </div>
+                    </div>
+                    <!-- INBOX CONTROLS -->
+                    <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                        <button class="enter-button" style="width: 100px; height: 25px; font-size: 12px; line-height: 20px;" onclick="openCompose(null)">
+                            New Mail
+                        </button>
+                        <button class="enter-button" style="width: 100px; height: 25px; font-size: 12px; line-height: 20px;" onclick="deleteReadEmails()">
+                            Delete Read
+                        </button>
+                        <button class="enter-button" style="width: 100px; height: 25px; font-size: 12px; line-height: 20px; margin: 0;" onclick="closeEmail()">
+                            Close Mail
+                        </button>
+                    </div>
+                </div>
+
+                <!-- COMPOSE VIEW -->
+                <div id="email-compose-view" style="display: none;">
+                    <input type="text" id="compose-recipient" class="sunken-style" placeholder="To:" style="width: 100%; margin-bottom: 5px; padding: 5px; box-sizing: border-box;">
+                    <input type="text" id="compose-subject" class="sunken-style" placeholder="Subject:" style="width: 100%; margin-bottom: 5px; padding: 5px; box-sizing: border-box;">
+                    <textarea id="compose-body" class="sunken-style" placeholder="Your Message Here..." style="width: 100%; height: 250px; resize: none; margin-bottom: 8px; padding: 5px; box-sizing: border-box; font-family: 'Courier New', monospace; font-size: 14px;"></textarea>
+                    
+                    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                        <button class="enter-button" style="width: 80px; height: 25px; font-size: 12px; line-height: 20px;" onclick="sendEmail()">
+                            Send
+                        </button>
+                        <button class="enter-button" style="width: 80px; height: 25px; font-size: 12px; line-height: 20px;" onclick="viewInbox()">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Board Client (Draggable Window) -->
+    <div class="draggable-window message-board-window" id="message-board-window" style="left: 200px; top: 250px; display: none;">
+        <div class="window-style">
+            <h1 class="drag-handle">
+                <span id="board-title" class="title-text">THE VOID Message Board - Forums</span>
+                <span class="window-controls">
+                    <button class="control-btn" onclick="toggleMinimize('message-board-window')">_</button>
+                    <button class="control-btn close-btn" onclick="hideWindow('message-board-window')">X</button>
+                </span>
+            </h1>
+            <div id="message-board-window-content">
+                <div id="board-post-view" style="display: block;">
+                    <!-- Post List Pane -->
+                    <div id="board-list-container" class="window-style sunken-style board-list-pane">
+                        <div id="board-list">
+                            <!-- Post list items appended here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Thread Detail Pane (hidden initially, appears when viewing a thread) -->
+                    <div id="board-detail-pane" class="email-detail-pane" style="height: 350px; display: none; margin-top: 8px;">
+                        <!-- Thread content loaded here -->
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                        <!-- NEW THREAD BUTTON -->
+                        <button id="new-thread-btn" class="enter-button" style="width: 120px; height: 25px; font-size: 12px; line-height: 20px; margin-right: 8px;" onclick="openNewThreadCompose()">
+                            New Thread
+                        </button>
+                        <button id="back-to-list-btn" class="enter-button" style="width: 120px; height: 25px; font-size: 12px; line-height: 20px; display: none;" onclick="renderMessageBoardList()">
+                            &lt; Back to Forums
+                        </button>
+                        <button class="enter-button" style="width: 100px; height: 25px; font-size: 12px; line-height: 20px; margin: 0;" onclick="hideWindow('message-board-window')">
+                            Close Board
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- NEW/REPLY COMPOSE VIEW -->
+                <div id="board-compose-view" style="display: none; padding: 10px; margin-top: 8px;" class="window-style sunken-style">
+                    <h3 style="margin-top: 0; margin-bottom: 8px;"><span id="compose-mode-title">Post New Thread</span>: <span id="reply-to-subject" style="color: #8B0000;"></span></h3>
+                    
+                    <!-- NEW SUBJECT INPUT FOR NEW THREADS -->
+                    <input type="text" id="board-subject-input" class="sunken-style" placeholder="Subject/Title:" style="width: 100%; margin-bottom: 5px; padding: 5px; box-sizing: border-box; display: none;"> 
+                    
+                    <textarea id="board-reply-body" class="sunken-style" placeholder="Your post/reply (use 90s slang!):" style="width: 100%; height: 200px; resize: none; margin-bottom: 8px; padding: 5px; box-sizing: border-box; font-family: 'Courier New', monospace; font-size: 14px;"></textarea>
+                    
+                    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                        <button id="post-thread-btn" class="enter-button" style="width: 100px; height: 25px; font-size: 12px; line-height: 20px;" onclick="postNewThread()">
+                            Post Thread
+                        </button>
+                         <button id="post-reply-btn" class="enter-button" style="width: 100px; height: 25px; font-size: 12px; line-height: 20px; display: none;" onclick="postBoardReply()">
+                            Post Reply
+                        </button>
+                        <button class="enter-button" style="width: 80px; height: 25px; font-size: 12px; line-height: 20px;" onclick="renderMessageBoardList()">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Customization/Display Properties Window (Draggable) -->
+    <div class="draggable-window customization-window" id="customization-window" style="left: 450px; top: 200px; display: none;">
+        <div class="window-style">
+            <h1 class="drag-handle">
+                <span class="title-text">Display Properties</span>
+                <span class="window-controls">
+                    <button class="control-btn" onclick="toggleMinimize('customization-window')">_</button>
+                    <button class="control-btn close-btn" onclick="hideWindow('customization-window')">X</button>
+                </span>
+            </h1>
+            <div id="customization-window-content">
+                
+                <!-- NEW BACKGROUND STYLE SECTION -->
+                <div style="margin-bottom: 15px;">
+                    <label for="background-style">Desktop Background Style:</label><br>
+                    <select id="background-style" onchange="updateDesktopStyle(this.value)" class="sunken-style" style="width: 100%; padding: 3px; font-family: 'Courier New', monospace; margin-top: 5px;">
+                        <option value="classic-teal">Classic Teal</option>
+                        <option value="cosmic-wallpaper">Cosmic Wallpaper</option>
+                        <option value="geometric-wallpaper">Wavy Geometric</option>
+                    </select>
+                </div>
+                
+                <!-- OLD BACKGROUND COLOR (for color selection if style allows) -->
+                <div style="margin-bottom: 15px;">
+                    <label for="background-color">Custom Solid Color (Only used with Classic Teal):</label><br>
+                    <input type="color" id="background-color" onchange="updateDesktopColor(this.value)" value="#008080" style="width: 100px; height: 30px; margin-top: 5px;">
+                </div>
+
+                <!-- SCREENSAVER TOGGLE -->
+                <div class="settings-row">
+                    <label for="screensaver-enabled">Enable Screensaver</label>
+                    <input type="checkbox" id="screensaver-enabled" checked onchange="updateScreensaverEnabled(this.checked)">
+                </div>
+
+                <!-- INACTIVITY TIMEOUT DROPDOWN -->
+                <div class="settings-row">
+                    <label for="inactivity-time">Wait Time (Inactivity):</label>
+                    <select id="inactivity-time" onchange="updateInactivityTime(this.value)" class="sunken-style">
+                        <option value="30000">30 Seconds</option>
+                        <option value="60000">1 Minute</option>
+                        <option value="120000">2 Minutes</option>
+                        <option value="300000">5 Minutes</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label for="screensaver-select">Screensaver Type:</label><br>
+                    <select id="screensaver-select" onchange="updateScreensaverType(this.value)" class="sunken-style" style="width: 100%; padding: 3px; font-family: 'Courier New', monospace; margin-top: 5px;">
+                        <option value="bouncing-text">Bouncing Text</option>
+                        <option value="flying-windows">Flying Windows</option>
+                        <option value="starfield">Starfield</option>
+                    </select>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <label>Preview:</label>
+                    <div id="screensaver-preview">
+                        <span id="preview-text">PREVIEW</span>
+                        <canvas id="preview-canvas" width="300" height="100" style="display: none;"></canvas>
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px;">
+                    <button class="enter-button" style="width: 80px; height: 25px; font-size: 12px; line-height: 20px;" onclick="resetScreensaverTimer()">
+                        Apply
+                    </button>
+                    <button class="enter-button" style="width: 80px; height: 25px; font-size: 12px; line-height: 20px;" onclick="hideWindow('customization-window')">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Taskbar at the bottom -->
+    <div id="taskbar" class="window-style" style="display: none; justify-content: space-between; align-items: center; width: 100%;">
+        <div style="display: flex; gap: 8px;">
+            <button class="taskbar-button" onclick="goToHub()">Log Off</button> <!-- Renamed from Hub to Log Off -->
+            <button class="taskbar-button" id="taskbar-chat-btn" onclick="taskbarOpen('main-chat-window')">Chat</button>
+            <button class="taskbar-button" id="taskbar-email-btn" onclick="taskbarOpen('email-window'); viewInbox();">Mail</button>
+            <!-- NEW TASKBAR BUTTON -->
+            <button class="taskbar-button" id="taskbar-board-btn" onclick="taskbarOpen('message-board-window'); renderMessageBoardList();">Board</button>
+            <!-- CUSTOMIZATION BUTTON -->
+            <button class="taskbar-button" id="taskbar-custom-btn" onclick="taskbarOpen('customization-window')">Custom</button>
+        </div>
+        <!-- CLOCK ELEMENT -->
+        <div id="taskbar-time" class="sunken-style" style="padding: 2px 6px; font-size: 12px; height: 18px; line-height: 14px; box-sizing: border-box;">
+            --:-- PM
+        </div>
+    </div>
+
+    <script>
+        // --- CHAT LOGIC ---
+
+        // Get elements by their new container IDs
+        const dialUpAudio = document.getElementById('dialUpAudio'); // NEW AUDIO ELEMENT
+        const body = document.body; // Reference to the body element for background color
+        const chatLog = document.getElementById('chat-log');
+        const userList = document.getElementById('user-list');
+        const inputMessage = document.getElementById('input-message');
+        const sendButton = document.getElementById('send-button');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const roomSelect = document.getElementById('room-select');
+        const mainTitle = document.getElementById('main-title');
+        const userListTitle = document.getElementById('user-list-title');
+
+        // New loading elements
+        const loadingScreen = document.getElementById('loading-screen');
+        const progressBarFill = document.getElementById('progress-bar-fill');
+        const loadingMessage = document.getElementById('loading-message');
+        
+        // New login elements
+        const usernamePromptScreen = document.getElementById('username-prompt-screen');
+        const userScreenNameInput = document.getElementById('user-screen-name');
+        const loginButton = document.getElementById('login-button');
+
+
+        // New email elements
+        const emailWindow = document.getElementById('email-window');
+        const emailTitle = document.getElementById('email-title');
+        const emailList = document.getElementById('email-list');
+        const emailDetailPane = document.getElementById('email-detail-pane');
+        const notificationToast = document.getElementById('notification-toast');
+        
+        // New email elements for compose view
+        const emailInboxView = document.getElementById('email-inbox-view');
+        const emailComposeView = document.getElementById('email-compose-view');
+        const composeRecipient = document.getElementById('compose-recipient');
+        const composeSubject = document.getElementById('compose-subject');
+        const composeBody = document.getElementById('compose-body');
+
+        // New message board elements
+        const messageBoardWindow = document.getElementById('message-board-window');
+        const boardTitle = document.getElementById('board-title');
+        const boardList = document.getElementById('board-list');
+        const boardDetailPane = document.getElementById('board-detail-pane');
+        const backToListBtn = document.getElementById('back-to-list-btn');
+        
+        // New board compose elements
+        const boardPostView = document.getElementById('board-post-view');
+        const boardComposeView = document.getElementById('board-compose-view');
+        const composeModeTitle = document.getElementById('compose-mode-title'); // NEW
+        const boardSubjectInput = document.getElementById('board-subject-input'); // NEW
+        const postThreadBtn = document.getElementById('post-thread-btn'); // NEW
+        const postReplyBtn = document.getElementById('post-reply-btn'); // NEW
+        const replyToSubject = document.getElementById('reply-to-subject');
+        const boardReplyBody = document.getElementById('board-reply-body');
+        
+        // Customization elements
+        const customizationWindow = document.getElementById('customization-window');
+        const screensaverSelect = document.getElementById('screensaver-select');
+        const bouncingTextScreensaver = document.getElementById('bouncing-text-screensaver');
+        const screensaverCanvas = document.getElementById('screensaver-canvas');
+        const screensaverPreview = document.getElementById('screensaver-preview');
+        const previewText = document.getElementById('preview-text');
+        const previewCanvas = document.getElementById('preview-canvas');
+
+        // New customization elements
+        const screensaverEnabledCheckbox = document.getElementById('screensaver-enabled');
+        const inactivityTimeSelect = document.getElementById('inactivity-time');
+        const backgroundColorInput = document.getElementById('background-color');
+        const backgroundStyleSelect = document.getElementById('background-style'); // NEW SELECT
+
+        // Draggable windows
+        const mainChatWindow = document.getElementById('main-chat-window');
+        const sidebarWindow = document.getElementById('sidebar-window');
+        const taskbar = document.getElementById('taskbar'); 
+
+        // Screensaver elements
+        const screensaver = document.getElementById('screensaver');
+        const bouncingText = document.getElementById('bouncing-text');
+        
+        // --- DATA CONSTANTS ---
+
+        // List of ASCII/Unicode icons for avatars
+        const AVATAR_ICONS = ['>', 'o/', '[]', ':-}', 'C=', '~*', '*', 'X', 'B)', '[]', '#', '{o}', '/\\']; 
+        
+        // Base user pool (avatar property will be added dynamically)
+        const USER_POOL_BASE = [
+            { name: 'CyberGoth86', color: '#8A2BE2' }, 
+            { name: 'Digital_Rebel', color: '#FF4500' }, 
+            { name: 'KewlKat_99', color: '#008000' }, 
+            { name: 'Neo_Phile', color: '#00BFFF' }, 
+            { name: 'Zippy_Pop', color: '#FF1493' }, 
+            { name: 'RaverDude', color: '#FFFF00' }, 
+            { name: 'SpaceCowboy', color: '#A020F0' }, 
+            { name: 'GrungeGrrl', color: '#8B4513' }, 
+            { name: 'ModemMasta', color: '#00FFFF' }, 
+            { name: 'AOL_Sucks', color: '#FF0000' }, 
+            { name: 'PhatBeats', color: '#008080' }, 
+            { name: 'BuffyFan', color: '#9370DB' }, 
+            { name: 'SeinfeldGuy', color: '#2F4F4F' }, 
+            { name: 'TamagotchiDad', color: '#DAA520' }, 
+            { name: 'Windows95', color: '#B8860B' }, 
+            { name: 'AdminBot', color: '#8B0000' },
+            // PREVIOUSLY ADDED USERS
+            { name: 'PixelPusher', color: '#40E0D0' },
+            { name: 'NetSurfer', color: '#7FFF00' },
+            { name: 'FloppyFreak', color: '#800000' },
+            { name: 'VHSCollector', color: '#FF8C00' },
+            { name: 'Y2K_Skeptic', color: '#4682B4' },
+            { name: 'Mtv_Kid', color: '#DC143C' },
+            { name: 'AskJeeves', color: '#808080' },
+            { name: 'DialTone_DJ', color: '#FFD700' },
+            { name: 'WinAmp_Pro', color: '#7B68EE' },
+            { name: 'PoodleSkirt', color: '#DDA0DD' },
+            // NEW 30 USERS ADDED
+            { name: 'StarDust97', color: '#FF69B4' },
+            { name: 'GeoCities_King', color: '#1E90FF' },
+            { name: 'ModemScreamer', color: '#9ACD32' },
+            { name: 'LinuxLlama', color: '#6A5ACD' },
+            { name: 'MacintoshMan', color: '#C0C0C0' },
+            { name: 'CD_Burner', color: '#20B2AA' },
+            { name: 'NapsterPirate', color: '#B22222' },
+            { name: 'BeanieBabyBoss', color: '#DA70D6' },
+            { name: 'AOL_TrialGuy', color: '#00CED1' },
+            { name: 'Netscape_Ninja', color: '#FF4500' },
+            { name: 'IRCHero', color: '#ADFF2F' },
+            { name: 'SpiceFan', color: '#FF6347' },
+            { name: 'TupacLives', color: '#006400' },
+            { name: 'BackstreetBoy', color: '#ADD8E6' },
+            { name: 'GigaPetOwner', color: '#FFA07A' },
+            { name: 'Win98_Guy', color: '#008080' },
+            { name: '486_DX2', color: '#696969' },
+            { name: 'MysticalMage', color: '#8B008B' },
+            { name: 'PogsPlayer', color: '#FFDAB9' },
+            { name: 'SegaMaster', color: '#191970' },
+            { name: 'AtariKid', color: '#BDB76B' },
+            { name: 'HotmailHacker', color: '#FFFAF0' },
+            { name: 'TheDialupGod', color: '#87CEFA' },
+            { name: 'NoFearDude', color: '#F08080' },
+            { name: 'WhatchaGonnaDo', color: '#2E8B57' },
+            { name: 'SlimeMaster', color: '#00FF7F' },
+            { name: 'TamagotchiKing', color: '#D2691E' },
+            { name: 'FannyPacker', color: '#BA55D3' },
+            { name: 'LimewireGuru', color: '#8FBC8F' },
+            { name: 'AltRockFan', color: '#483D8B' }
+        ];
+
+        let USER_POOL = []; // Populated by init logic
+        
+        // The user's screen name object (starts as a placeholder, set on login)
+        const GUEST_USER = { name: 'PLACEHOLDER', color: '#800080', avatar: 'YOU' };
+
+        let ADMIN_BOT; // Populated by init logic
+
+        // Chatroom Definitions
+        const CHAT_ROOMS = [
+            { id: 'vortex', name: 'T H E V O R T E X', topic: 'General discussion about computers, modems, and early internet culture.' },
+            { id: 'grunge', name: 'GrungeNation', topic: 'Discussing 90s rock, bands like Nirvana, Pearl Jam, Soundgarden, and alternative music.' },
+            { id: 'xfiles', name: 'X-Philes', topic: 'Debating episodes and theories of The X-Files, Twin Peaks, and conspiracy theories. Also talking about aliens and UFOs.' },
+            { id: 'gaming', name: 'DoomAndStarcraft', topic: 'Talking about PC gaming, LAN parties, cheats, and the latest releases like Diablo, Quake, or Starcraft.' },
+            { id: 'news', name: 'WorldLink-98', topic: 'Breaking news, world events, political drama, and Y2K paranoia. No flame wars, plz!' },
+            { id: 'sports', name: 'Jordans_Court', topic: 'Debating NBA dynasties, baseball drama, and the best players of the 90s (Jordan, Favre, Gretzky, etc.).' },
+            { id: 'chill', name: 'The_Chill_Spot', topic: 'Just chillin. Talk about your day, what you ate, who called your landline, and general life updates. No drama, plz! :)' }, // NEW ROOM
+            { id: 'gameshow', name: '!GAMESHOW!', topic: 'Playing 90s pop culture trivia against the clock and other users. Fast answers win!' }
+        ];
+        
+        // TRIVIA QUESTIONS (for the !GAMESHOW! room)
+        const TRIVIA_QUESTIONS = [
+            { question: "What toy caused frenzied shopping mall riots in 1996?", answer: "Tickle Me Elmo", wrong: ["Furby", "Tamagotchi", "Beanie Baby"] },
+            { question: "The movie 'The Matrix' was released in which year?", answer: "1999", wrong: ["1997", "1998", "2000"] },
+            { question: "What was the name of the floppy-haired lead singer of the band Hanson?", answer: "Taylor", wrong: ["Isaac", "Zac", "Jake"] },
+            { question: "Before becoming a singer, what was Jewel's home in San Diego?", answer: "Van", wrong: ["Tent", "Garage", "Trailer"] },
+            { question: "Which Nintendo console was released first: Nintendo 64 or Game Boy Color?", answer: "Nintendo 64", wrong: ["Game Boy Color", "SNES", "Virtual Boy"] },
+            { question: "What short, feathered haircut was popularized by actress Jennifer Aniston?", answer: "The Rachel", wrong: ["The Meg", "The Drew", "The Monica"] }
+        ];
+        
+        // --- MESSAGE BOARD DATA ---
+        // Initialized empty. Posts will be fetched dynamically on startup.
+        let messageBoardPosts = [];
+
+        
+        // --- Intervals and State ---
+        let aiInterval = null;
+        let joinLeaveInterval = null;
+        let emailInterval = null;
+        let triviaInterval = null; // New interval for the trivia game loop
+        let boardPostInterval = null; // Interval for new board posts
+        let threadInteractionInterval = null; // NEW: Interval for simulating thread scores
+        let clockInterval; 
+        let zIndexCounter = 100;
+        let dialogueQueue = [];
+        let isFetching = false;
+        let receivedEmails = [];
+        let replyToEmail = null; // Stores the email object being replied to
+        let isGameMode = false; // Tracks if the user is in the trivia room
+        
+        let currentTriviaIndex = 0;
+        let currentAnswer = null;
+        let isAnswered = true; // Start as true to trigger the first question immediately
+
+        let currentRoomId = CHAT_ROOMS[0].id; // Initialized to default room
+
+        // Initial set of users online (a subset of the pool, excluding AdminBot)
+        let onlineUsers = []; // Populated by init logic
+        
+        // Screensaver state variables
+        let screensaverTimeout;
+        let screensaverEnabled = true; // NEW: Default to ON
+        let inactivityTimeMs = 30000; // NEW: Default to 30 seconds (match initial selection)
+        let screensaverActive = false;
+        let bounceInterval;
+        let x_pos = 50; 
+        let y_pos = 50;
+        let x_dir = 1;
+        let y_dir = 1;
+        const speed = 5; 
+
+        let currentViewingThreadId = null; // Track the currently viewed thread ID
+        let replyToThreadId = null; // NEW: Track the thread being replied to
+        
+        // Customization State
+        let currentScreensaverType = 'bouncing-text'; 
+        let currentBackgroundStyle = 'classic-teal'; // NEW: Default background style
+        let currentBackgroundColor = '#008080'; // NEW: Default background color 
+        let starfieldAnimating = false;
+        let flyingWindowsAnimating = false;
+
+        // NEW: Map to track active DM sessions
+        let activeDMSessions = new Map(); // Key: username, Value: { windowElement, logElement, inputElement, loadingElement, sendElement, responderUser }
+        
+        // NEW: Chat history for conversational memory
+        let chatHistory = []; 
+        const CHAT_HISTORY_LIMIT = 15; // Keep the last 15 messages for context
+
+
+        // --- UTILITY FUNCTIONS ---
+        
+        /**
+         * Assigns unique ASCII avatars to the user pool.
+         */
+        function initializeUserPool() {
+            const availableIcons = [...AVATAR_ICONS];
+            
+            // Assign avatars to base users
+            USER_POOL = USER_POOL_BASE.map(user => {
+                let icon;
+                if (user.name === 'AdminBot') {
+                    icon = '(A)'; // Fixed admin bot avatar
+                } else if (availableIcons.length > 0) {
+                    const iconIndex = Math.floor(Math.random() * availableIcons.length);
+                    icon = availableIcons.splice(iconIndex, 1)[0];
+                } else {
+                    icon = '[?]'; // Fallback
+                }
+                return { ...user, avatar: icon };
+            });
+
+            ADMIN_BOT = USER_POOL.find(u => u.name === 'AdminBot');
+            
+            // Initial online users list setup
+            onlineUsers = USER_POOL.filter(u => u.name !== 'AdminBot').slice(0, 5);
+        }
+
+        /**
+         * Utility function to get a random item from an array.
+         * @param {Array<any>} arr The array to select from.
+         * @returns {any} A random item.
+         */
+        const getRandomItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
+        
+        /**
+         * Finds a random user object who is NOT the admin bot or the client user.
+         */
+        const getRandomSender = () => {
+            const potentialSenders = USER_POOL.filter(u => u.name !== 'AdminBot' && u.name !== GUEST_USER.name);
+            return getRandomItem(potentialSenders);
+        }
+        
+        /**
+         * Finds a user object by name, returning GUEST_USER or ADMIN_BOT if matched.
+         * @param {string} username The name to search for.
+         * @returns {Object} The user object.
+         */
+        function getUserByName(username) {
+            if (username === GUEST_USER.name) return GUEST_USER;
+            if (username === ADMIN_BOT.name) return ADMIN_BOT;
+            return USER_POOL.find(u => u.name === username) || { name: username, color: '#0000FF', avatar: '[?]' };
+        }
+
+
+        // Generates a current date/time string in a 90s format
+        const get90sTimestamp = () => {
+            return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) + ' ' + 
+                   new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        };
+
+
+        // --- EMOTICON MAPPING (Unchanged) ---
+        const EMOTICON_MAP = {
+            ':)': '😊', 
+            ':D': '😁', 
+            ':(': '🙁', 
+            ';)': '😉', 
+            ':P': '😛', 
+            ':o': '😮', 
+            'XD': '😆', 
+            '<3': '❤️', 
+            'O_o': '😳', 
+            'o/': '👋', 
+        };
+
+        /**
+         * Replaces text-based emoticons with their emoji equivalents.
+         * @param {string} text The message text.
+         * @returns {string} The text with emojis.
+         */
+        function replaceEmoticons(text) {
+            let result = text;
+            const sortedKeys = Object.keys(EMOTICON_MAP).sort((a, b) => b.length - a.length);
+
+            sortedKeys.forEach(emoticon => {
+                const regex = new RegExp(emoticon.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"), 'g');
+                result = result.replace(regex, EMOTICON_MAP[emoticon]);
+            });
+            return result;
+        }
+
+
+        // --- DRAG, MINIMIZE, Z-INDEX LOGIC (Unchanged) ---
+        function makeDraggable(elmnt) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            const header = elmnt.querySelector('.drag-handle');
+
+            if (header) {
+                header.onmousedown = dragMouseDown;
+            } else {
+                elmnt.onmousedown = dragMouseDown;
+            }
+            
+            elmnt.addEventListener('mousedown', () => {
+                elmnt.style.zIndex = ++zIndexCounter;
+            });
+
+            function dragMouseDown(e) {
+                e = e || window.event;
+                e.preventDefault();
+                
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+                elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+            }
+        }
+
+        function toggleMinimize(windowId) {
+            document.getElementById(windowId).classList.toggle('minimized');
+        }
+
+        function hideWindow(windowId) {
+            document.getElementById(windowId).style.display = 'none';
+        }
+
+        function taskbarOpen(windowId) {
+            const windowEl = document.getElementById(windowId);
+            
+            if (windowId === 'main-chat-window') {
+                const sidebarEl = document.getElementById('sidebar-window');
+                sidebarEl.style.display = 'block';
+                sidebarEl.style.zIndex = ++zIndexCounter;
+                if (sidebarEl.classList.contains('minimized')) {
+                    sidebarEl.classList.remove('minimized');
+                }
+            }
+
+            windowEl.style.display = 'block';
+            windowEl.style.zIndex = ++zIndexCounter;
+
+            if (windowEl.classList.contains('minimized')) {
+                windowEl.classList.remove('minimized');
+            }
+            
+            if (windowId === 'main-chat-window' && !aiInterval && !triviaInterval) {
+                 startChatLogic();
+            }
+        }
+        
+        // --- NOTIFICATION HANDLER (Unchanged) ---
+        function handleNotificationClick() {
+            // Read the notification type stored when the toast was shown
+            const type = notificationToast.dataset.notificationType;
+            
+            if (type === 'board') {
+                taskbarOpen('message-board-window');
+                // Ensure board view is set to list when opened via notification
+                renderMessageBoardList(); 
+            } else { // Defaults to email
+                taskbarOpen('email-window');
+                viewInbox();
+            }
+            
+            // Hide the toast immediately
+            notificationToast.style.top = '-50px';
+            setTimeout(() => notificationToast.style.display = 'none', 300);
+        }
+        
+        // --- GEMINI API CONFIGURATION (Unchanged) ---
+        const apiKey = "";
+        const model = 'gemini-2.5-flash-preview-05-20';
+        const MAX_RETRIES = 3;
+        
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        async function exponentialBackoffFetch(payload) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        return await response.json();
+                    }
+
+                    console.error(`API attempt ${attempt + 1} failed with status: ${response.status}`);
+
+                } catch (error) {
+                    console.error(`API attempt ${attempt + 1} failed:`, error);
+                }
+
+                if (attempt < MAX_RETRIES - 1) {
+                    const delay = Math.pow(2, attempt) * 1000 + (Math.random() * 1000); // 1s, 2s, 4s + jitter
+                    await sleep(delay);
+                }
+            }
+            throw new Error("API call failed after multiple retries.");
+        }
+
+
+        // --- CHAT PROMPT LOGIC (UPDATED FOR HISTORY) ---
+
+        function getSystemPrompt() {
+            const room = CHAT_ROOMS.find(r => r.id === currentRoomId);
+            const topic = room ? room.topic : CHAT_ROOMS[0].topic;
+            const currentOnlineNames = onlineUsers.map(u => u.name).filter(n => n !== 'AdminBot' && n !== GUEST_USER.name);
+
+            return `You are a creative writer generating dialogue for a 1998 internet chat room called '${room.name}'. 
+            The current topic/theme is: ${topic}. 
+            
+            CRITICAL INSTRUCTIONS:
+            1. Base the new dialogue on the PREVIOUS MESSAGES provided in the chat history. The conversation must flow logically from the last message.
+            2. Users should remember and respond to points made by other users, including GUEST_USER (whose messages appear as the 'user' role).
+            3. Introduce natural topic shifts within the scope of the room's main theme (e.g., in a sports chat, shift from NBA to Baseball).
+            4. Keep the language nostalgic, using 90s slang (like 'kewl', 'da bomb', 'pwned', 'brb', 'lol', 'asl'), and refer to 90s pop culture specific to the topic. Ensure dialogue uses text emoticons like :) or :D frequently.
+
+            Your response must ONLY contain 5 lines of fictional user dialogue. Each line must be formatted EXACTLY as:
+            [Username]: [Message]
+
+            The username MUST be strictly one of these: ${currentOnlineNames.join(', ')}. Do not use 'AdminBot'. Do not use any other text, markdown, or formatting. Separate the lines using a newline character (\\n).`;
+        }
+        
+        function getResponsePrompt(responderName, userMessage) {
+            const room = CHAT_ROOMS.find(r => r.id === currentRoomId);
+            const topic = room ? room.topic : CHAT_ROOMS[0].topic;
+
+            return `You are a fictional 1998 internet chat user named '${responderName}' in the room '${room.name}' (Topic: ${topic}). The user '${GUEST_USER.name}' just sent a message.
+
+            Your task is to provide a single, short, witty, or relevant response (1-2 sentences maximum) directly to '${GUEST_USER.name}'s message.
+            
+            Strictly maintain the 90s slang, tone, and text emoticons (like :), :D, LOL, BRB). The response must be formatted ONLY as:
+            ${responderName}: [Your message]
+
+            The message from '${GUEST_USER.name}' was: "${userMessage}"`;
+        }
+
+        // --- DM PROMPT LOGIC (Unchanged) ---
+
+        function getDMPrompt(responderName, userMessage) {
+            return `You are a fictional 1998 internet user named '${responderName}'. You received a private message from '${GUEST_USER.name}'.
+            Your task is to provide a single, short, friendly, or witty private message response (1-2 sentences maximum) directly to '${GUEST_USER.name}'.
+            Strictly maintain the 90s slang, tone, and text emoticons (like :), :D, LOL, BRB). The response must ONLY be the message body, no name or formatting needed.
+            The private message from '${GUEST_USER.name}' was: "${userMessage}"`;
+        }
+        
+        // --- EMAIL GENERATION LOGIC (Unchanged) ---
+        
+        // Structured output schema for unique incoming emails
+        const EMAIL_SCHEMA = {
+            type: "OBJECT",
+            properties: {
+                "subject": { "type": "STRING", "description": "A short, attention-grabbing email subject line in a 90s style (e.g., RE: FW: Fwd: OMG!)" },
+                "body": { "type": "STRING", "description": "The main body of the email (2-4 sentences max), including 90s slang and a specific 90s topic (e.g., computers, TV, music, games)." }
+            },
+            "propertyOrdering": ["subject", "body"]
+        };
+
+        function generateIncomingEmailPrompt(senderName) {
+            const topics = [
+                "A hilarious new animated GIF for your Geocities page.", 
+                "A conspiracy theory about The X-Files that involves floppy disks.", 
+                "A highly critical review of the new Windows 98 update.",
+                "An urgent message about a new cheat code for Doom or Quake.",
+                "An offer for free AOL CDs that must be claimed immediately.",
+                "A debate about whether CDs or MiniDiscs will win the format war."
+            ];
+            const topic = getRandomItem(topics);
+
+            return `You are a creative writer generating a new, unique incoming email from a 1998 internet user named '${senderName}' to '${GUEST_USER.name}'.
+            
+            The email's theme should be related to: ${topic}.
+            
+            The email MUST contain authentic 90s internet slang (e.g., 'kewl', 'da bomb', 'l8r', ':D') and text emoticons. The tone should be excited or slightly dramatic.
+            
+            Strictly adhere to the required JSON schema for the output.`;
+        }
+
+        async function fetchNewIncomingEmail(senderName) {
+            const userQuery = `Generate a new, unique 90s-themed email from ${senderName}.`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: generateIncomingEmailPrompt(senderName) }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: EMAIL_SCHEMA
+                }
+            };
+            
+            try {
+                const result = await exponentialBackoffFetch(payload);
+                
+                if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    const jsonText = result.candidates[0].content.parts[0].text;
+                    const parsed = JSON.parse(jsonText);
+                    return { subject: parsed.subject || "No Subject", body: parsed.body || "No Body" };
+                }
+            } catch (error) {
+                console.error("Error generating or parsing structured email:", error);
+            }
+            // Fallback if API fails or parsing errors
+            return { 
+                subject: `RE: Fwd: Connection Error! :o`, 
+                body: `My modem just squeaked, I think the server is having issues. BRB, dialing up again... L8R!` 
+            };
+        }
+
+
+        // --- EMAIL REPLY PROMPT LOGIC (Unchanged) ---
+        
+        function getEmailReplyPrompt(senderName, replySubject, replyBody) {
+            const originalEmail = replyToEmail; 
+            
+            let context = `The user '${GUEST_USER.name}' replied to your email. The conversation should maintain a 90s internet tone, using period-appropriate slang, and responding to the content of the user's reply.`;
+
+            if (originalEmail) {
+                context += `\n\nOriginal subject was: "${originalEmail.subject}". Original body was: "${originalEmail.body}".`;
+            }
+
+            return `You are a 1998 internet user named '${senderName}'. Write an email reply (2-3 sentences max) to '${GUEST_USER.name}'.
+            
+            Context: ${context}
+            
+            The user's reply was:
+            Subject: ${replySubject}
+            Body: ${replyBody}
+            
+            Your response must ONLY contain the subject and body of your reply. Do not include 'To:', 'From:', or any other headers. Format the response strictly as:
+            Subject: [Your Subject]
+            Body: [Your reply body]
+            
+            Use 90s slang and emoticons.`;
+        }
+        
+        // --- MESSAGE BOARD GENERATION LOGIC (Unchanged) ---
+        
+        // Structured output schema for unique message board posts
+        const BOARD_POST_SCHEMA = {
+            type: "OBJECT",
+            properties: {
+                "subject": { "type": "STRING", "description": "A compelling, short, 90s-themed message board subject line (e.g., URGENT!, LOL, PLZ READ!)." },
+                "content": { "type": "STRING", "description": "The main post body (3-5 sentences max), discussing a 90s topic (PC gaming, internet culture, music, or TV) using strong 90s slang." }
+            },
+            "propertyOrdering": ["subject", "content"]
+        };
+
+        function generateBoardThreadPrompt(senderName) {
+            const topics = [
+                "A hot new patch for a PC game (Doom, Quake, Starcraft).", 
+                "The best/worst new album of 1998/1999 (Grunge, Pop, Techno).", 
+                "The status of animated GIFs and their future on the web.",
+                "A new Geocities site that's 'da bomb'.",
+                "A weird theory about the Y2K bug or the millennium.",
+                "Debate: Is ICQ better than AIM?"
+            ];
+            const topic = getRandomItem(topics);
+
+            return `You are generating a new, unique message board thread from a 1998 internet user named '${senderName}'.
+            
+            The thread's theme should be related to: ${topic}.
+            
+            The thread MUST contain authentic 90s internet slang (e.g., 'kewl', 'phat', 'pwned', ':o') and use a dramatic, excited, or informational tone.
+            
+            Strictly adhere to the required JSON schema for the output.`;
+        }
+
+        async function fetchNewBoardThread(senderName) {
+            const userQuery = `Generate a new, unique 90s-themed message board thread from ${senderName}.`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: { parts: [{ text: generateBoardThreadPrompt(senderName) }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: BOARD_POST_SCHEMA
+                }
+            };
+            
+            try {
+                const result = await exponentialBackoffFetch(payload);
+                
+                if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    const jsonText = result.candidates[0].content.parts[0].text;
+                    const parsed = JSON.parse(jsonText);
+                    return { subject: parsed.subject || "No Subject", content: parsed.content || "No Content" };
+                }
+            } catch (error) {
+                console.error("Error generating or parsing structured board post:", error);
+            }
+            // Fallback
+            return { 
+                subject: `Board Error - Dial-Up Failed`, 
+                content: `My modem disconnected mid-post. Please wait 10 seconds and try reloading the forum. BRB.` 
+            };
+        }
+
+
+        // --- MESSAGE BOARD REPLY PROMPT LOGIC (Unchanged) ---
+        
+        function getBoardReplyPrompt(thread) {
+            // Find a user who is NOT the thread author and not the client user.
+            const potentialResponders = USER_POOL.filter(u => u.name !== thread.author && u.name !== GUEST_USER.name && u.name !== 'AdminBot');
+            const responder = getRandomItem(potentialResponders) || getRandomSender();
+
+            return `You are a creative writer generating a new reply for a 1998 internet message board thread called '${thread.subject}'. You will post as the user '${responder.name}'.
+
+            The thread's original post, written by ${thread.author} on ${thread.date}, was: "${thread.content}".
+            
+            There are currently ${thread.replies.length} replies. The reply should be short (1-3 sentences), use 90s slang (like 'kewl', 'phat', 'l8r', 'pwned'), emoticons (like :D, :o), and relate directly to the thread's topic.
+
+            Your response must ONLY be the message body (no username/subject/headers). The response should sound like it was posted by: ${responder.name}.`;
+        }
+
+        // --- CORE CHAT LOGIC (UPDATED) ---
+
+        async function fetchAIConversation() {
+            if (isFetching || onlineUsers.length < 2) {
+                return; 
+            }
+            if (currentRoomId === 'gameshow') {
+                // Do not fetch general AI chat in gameshow mode
+                return;
+            }
+
+            isFetching = true;
+            
+            if (dialogueQueue.length === 0) {
+                 sendButton.style.display = 'none';
+                 loadingIndicator.style.display = 'block';
+            }
+
+            // Construct the instruction for the AI to continue the conversation
+            const userInstruction = `Continue the 1998 chatroom conversation in 5 lines, ensuring continuity and 90s slang.`;
+
+            // History + the final instruction (which is always treated as a 'user' turn)
+            const contents = [
+                ...chatHistory.slice(-CHAT_HISTORY_LIMIT), // Include recent history for context
+                { role: 'user', parts: [{ text: userInstruction }] }
+            ];
+
+            const payload = {
+                contents: contents,
+                systemInstruction: { parts: [{ text: getSystemPrompt() }] },
+            };
+
+            try {
+                const result = await exponentialBackoffFetch(payload);
+                const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (text) {
+                    const lines = text.split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line.match(/^(\w+): (.*)/)); 
+
+                    dialogueQueue.push(...lines);
+                } else {
+                    console.error("Gemini response was empty or malformed.");
+                    dialogueQueue.push("AdminBot: Server maintenance, BBL.");
+                }
+
+            } catch (error) {
+                console.error("Error fetching AI conversation:", error);
+                dialogueQueue.push("AdminBot: ERROR: Connection unstable. Dial up again.");
+            } finally {
+                isFetching = false;
+                sendButton.style.display = 'block';
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        async function triggerAIResponse(userMessage) {
+            if (currentRoomId === 'gameshow' && currentAnswer !== null) {
+                // If in gameshow mode and a question is active, skip general AI response
+                return;
+            }
+
+            // Pick a user who is currently online (excluding AdminBot and self)
+            const responseUsers = onlineUsers.filter(u => u.name !== 'AdminBot' && u.name !== GUEST_USER.name);
+            if (responseUsers.length === 0) return;
+
+            const responder = getRandomItem(responseUsers);
+
+            inputMessage.disabled = true;
+            sendButton.style.display = 'none';
+            loadingIndicator.style.display = 'block';
+            inputMessage.placeholder = 'Waiting for response...';
+
+            try {
+                const result = await exponentialBackoffFetch({
+                    contents: [{ parts: [{ text: `Respond directly to this message: "${userMessage}"` }] }],
+                    systemInstruction: { parts: [{ text: getResponsePrompt(responder.name, userMessage) }] },
+                });
+                
+                const rawResponse = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (rawResponse) {
+                    const match = rawResponse.match(/^(\w+): (.*)/) || rawResponse.match(/^(.*?): (.*)/s); 
+                    
+                    let responseName = responder.name;
+                    let responseMessage = rawResponse;
+
+                    if (match) {
+                        responseName = match[1].trim(); 
+                        responseMessage = match[2].trim();
+                    } else {
+                        responseMessage = rawResponse.replace(responder.name + ':', '').trim();
+                        if (responseMessage.startsWith('"') && responseMessage.endsWith('"')) {
+                            responseMessage = responseMessage.slice(1, -1);
+                        }
+                    }
+
+                    // Add response to log and history
+                    addMessage(responseName, responseMessage, responder.color, 'model');
+                    
+                } else {
+                    addMessage('AdminBot', `NOTICE: ${responder.name}'s modem disconnected briefly while typing.`, ADMIN_BOT.color, 'model');
+                }
+
+            } catch (error) {
+                console.error("Error triggering AI response:", error);
+                addMessage('AdminBot', `ERROR: Failed to fetch direct response. Server overloaded.`, ADMIN_BOT.color, 'model');
+            } finally {
+                inputMessage.disabled = false;
+                sendButton.style.display = 'block';
+                loadingIndicator.style.display = 'none';
+                inputMessage.placeholder = 'Type message here...';
+                inputMessage.focus();
+            }
+        }
+        
+        // --- DM CHAT LOGIC (Unchanged) ---
+
+        function addDMMessage(logElement, username, message, color) {
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message-line';
+            const processedMessage = replaceEmoticons(message); 
+
+            messageElement.innerHTML = `[${time}] &lt;<span class="username" style="color: ${color};">${username}</span>&gt; ${processedMessage}`;
+
+            logElement.appendChild(messageElement);
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        async function triggerDMResponse(targetUsername, userMessage, session) {
+            session.inputElement.disabled = true;
+            session.sendElement.style.display = 'none';
+            session.loadingElement.style.display = 'block';
+
+            const responder = session.responderUser;
+
+            try {
+                const result = await exponentialBackoffFetch({
+                    contents: [{ parts: [{ text: `Private message response to: "${userMessage}"` }] }],
+                    systemInstruction: { parts: [{ text: getDMPrompt(responder.name, userMessage) }] },
+                });
+
+                const rawResponse = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                let responseMessage = rawResponse || "BRB. My mom needs the phone line. :(";
+                
+                // Clean up any stray user names or formatting from AI response
+                responseMessage = responseMessage.replace(new RegExp(`^${responder.name}:`, 'i'), '').trim();
+                if (responseMessage.startsWith('"') && responseMessage.endsWith('"')) {
+                     responseMessage = responseMessage.slice(1, -1);
+                }
+
+                addDMMessage(session.logElement, responder.name, responseMessage, responder.color);
+
+            } catch (error) {
+                console.error("Error triggering DM response:", error);
+                addDMMessage(session.logElement, 'AdminBot', `ERROR: Failed to fetch DM response from ${responder.name}.`, ADMIN_BOT.color);
+            } finally {
+                session.inputElement.disabled = false;
+                session.sendElement.style.display = 'block';
+                session.loadingElement.style.display = 'none';
+                session.inputElement.focus();
+            }
+        }
+        
+        function sendDM(targetUsername) {
+            const session = activeDMSessions.get(targetUsername);
+            if (!session) return;
+
+            const messageText = session.inputElement.value.trim();
+            if (!messageText) return;
+
+            // 1. Post user message
+            addDMMessage(session.logElement, GUEST_USER.name, messageText, GUEST_USER.color);
+            session.inputElement.value = '';
+
+            // 2. Trigger AI response
+            triggerDMResponse(targetUsername, messageText, session);
+        }
+        
+        function closeDM(targetUsername) {
+            const session = activeDMSessions.get(targetUsername);
+            if (session) {
+                session.windowElement.remove();
+                activeDMSessions.delete(targetUsername);
+            }
+        }
+        
+        function openDM(targetUsername) {
+            if (targetUsername === GUEST_USER.name || targetUsername === 'AdminBot') return;
+
+            // Check if window already exists
+            if (activeDMSessions.has(targetUsername)) {
+                const session = activeDMSessions.get(targetUsername);
+                taskbarOpen(session.windowElement.id); // Bring to front/unminimize
+                session.inputElement.focus();
+                return;
+            }
+
+            const targetUser = getUserByName(targetUsername);
+            if (!targetUser) return;
+
+            // 1. Create the window element dynamically
+            const windowId = `dm-window-${targetUsername}`;
+            const newWindow = document.createElement('div');
+            newWindow.id = windowId;
+            newWindow.className = 'draggable-window sidebar-window'; // Reusing sidebar window style
+            
+            // Offset position slightly for new window stack
+            const offset = activeDMSessions.size * 20;
+            newWindow.style.left = `${100 + offset}px`;
+            newWindow.style.top = `${100 + offset}px`;
+            newWindow.style.width = '350px';
+            newWindow.style.height = '350px';
+            newWindow.style.display = 'block';
+
+            newWindow.innerHTML = `
+                <div class="window-style">
+                    <h1 class="drag-handle">
+                        <span class="title-text">:: IM with ${targetUsername} ::</span>
+                        <span class="window-controls">
+                            <button class="control-btn" onclick="toggleMinimize('${windowId}')">_</button>
+                            <button class="control-btn close-btn" onclick="closeDM('${targetUsername}')">X</button>
+                        </span>
+                    </h1>
+                    <div id="${windowId}-content">
+                        <div id="${windowId}-log" class="sunken-style" style="height: 250px; overflow-y: auto; padding: 5px; margin-bottom: 8px; font-size: 14px;">
+                            <div class="message-line" style="color: ${ADMIN_BOT.color};">[${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })}] *** You started a private chat with ${targetUsername}. ***</div>
+                        </div>
+                        <div style="display: flex;">
+                            <input type="text" id="${windowId}-input" class="sunken-style" placeholder="Private Message..." style="width: calc(100% - 70px); padding: 3px; margin-right: 5px; font-size: 14px; box-sizing: border-box;">
+                            <button id="${windowId}-send" onclick="sendDM('${targetUsername}')" class="taskbar-button" style="width: 60px; height: 22px; font-size: 12px; margin: 0;">Send</button>
+                            <div id="${windowId}-load" class="taskbar-button" style="width: 60px; height: 22px; font-size: 12px; margin: 0; display: none; cursor: default; color: #8B0000; animation: blink 1s step-end infinite;">WAIT...</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(newWindow);
+            makeDraggable(newWindow);
+
+            const logElement = document.getElementById(`${windowId}-log`);
+            const inputElement = document.getElementById(`${windowId}-input`);
+
+            // Add keypress handler for 'Enter'
+            inputElement.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendDM(targetUsername);
+                }
+            });
+
+            // Store session data
+            activeDMSessions.set(targetUsername, {
+                windowElement: newWindow,
+                logElement: logElement,
+                inputElement: inputElement,
+                loadingElement: document.getElementById(`${windowId}-load`),
+                sendElement: document.getElementById(`${windowId}-send`),
+                responderUser: targetUser 
+            });
+            
+            // Bring window to front and focus input
+            newWindow.style.zIndex = ++zIndexCounter;
+            inputElement.focus();
+        }
+
+
+        // --- EMAIL SIMULATION & INTERACTION LOGIC (Unchanged) ---
+        
+        function deleteReadEmails() {
+            // Filter out all emails that have been read (isRead === true)
+            const initialCount = receivedEmails.length;
+            receivedEmails = receivedEmails.filter(email => !email.isRead);
+            
+            const deletedCount = initialCount - receivedEmails.length;
+            if (deletedCount > 0) {
+                 showNotification(`[Mailbox] Deleted ${deletedCount} read messages.`, 'email');
+            } else {
+                 // No alert here, rely on console error or ignore for smooth UI
+            }
+
+            // Re-render the list immediately
+            renderEmailList();
+            // Clear detail pane as the viewed email might have been deleted
+            emailDetailPane.innerHTML = 'Select an email from the left pane.';
+        }
+
+        function viewInbox() {
+            emailInboxView.style.display = 'block';
+            emailComposeView.style.display = 'none';
+            renderEmailList();
+        }
+
+        function openCompose(email) {
+            replyToEmail = email;
+
+            emailInboxView.style.display = 'none';
+            emailComposeView.style.display = 'block';
+
+            if (email) {
+                composeRecipient.value = email.sender;
+                
+                let subject = email.subject.startsWith('RE:') ? email.subject : `RE: ${email.subject}`;
+                composeSubject.value = subject;
+                
+                let quotedBody = `\n\n> ----- Original Message -----\n> From: ${email.sender}\n> To: ${GUEST_USER.name}\n> Sent: ${email.time}\n> Subject: ${email.subject}\n>\n`;
+                const lines = email.body.split('\n');
+                lines.forEach(line => {
+                    quotedBody += `> ${line}\n`;
+                });
+
+                composeBody.value = quotedBody;
+            } else {
+                composeRecipient.value = '';
+                composeSubject.value = '';
+                composeBody.value = '';
+            }
+        }
+
+        function sendEmail() {
+            const recipient = composeRecipient.value.trim();
+            const subject = composeSubject.value.trim();
+            const body = composeBody.value.trim();
+
+            if (!recipient || !subject || !body) {
+                console.error('Cannot send: Recipient, Subject, and Body are required.');
+                return;
+            }
+
+            const isReply = !!replyToEmail;
+            const targetSenderName = isReply ? replyToEmail.sender : recipient;
+            
+            const sentEmail = {
+                id: receivedEmails.length,
+                sender: GUEST_USER.name,
+                recipient: targetSenderName,
+                subject: subject,
+                body: body,
+                time: get90sTimestamp(), // Use full time string
+                isRead: true, 
+                isSent: true,
+                replyTriggered: false,
+                originalEmail: replyToEmail
+            };
+
+            receivedEmails.unshift(sentEmail);
+            viewInbox();
+            
+            if (USER_POOL.some(u => u.name === targetSenderName)) {
+                const replyDelay = 60000 + Math.random() * 120000; 
+                
+                const aiCallData = {
+                    senderName: targetSenderName,
+                    replySubject: subject,
+                    replyBody: body,
+                    originalEmail: replyToEmail
+                };
+
+                setTimeout(() => {
+                    const currentReplyTo = replyToEmail; 
+                    replyToEmail = aiCallData.originalEmail;
+                    triggerEmailReply(aiCallData);
+                    replyToEmail = currentReplyTo; 
+                }, replyDelay);
+
+                console.log(`Email sent to ${targetSenderName}. AI reply scheduled in ${Math.round(replyDelay / 1000)} seconds.`);
+            }
+            
+            replyToEmail = null; 
+        }
+
+        async function triggerEmailReply(data) {
+            
+            const payload = {
+                contents: [{ parts: [{ text: `Generate a reply to an email from GuestUser.` }] }],
+                systemInstruction: { parts: [{ text: getEmailReplyPrompt(data.senderName, data.replySubject, data.replyBody) }] },
+                // Use structured output for replies too for reliability, reusing the incoming schema
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: EMAIL_SCHEMA 
+                }
+            };
+
+            try {
+                const result = await exponentialBackoffFetch(payload);
+                const rawResponse = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (rawResponse) {
+                    const parsed = JSON.parse(rawResponse);
+
+                    const newEmail = {
+                        id: receivedEmails.length,
+                        sender: data.senderName,
+                        subject: parsed.subject || `RE: ${data.replySubject}`,
+                        body: parsed.body || `Got your email, that's kewl! L8R. :)`,
+                        time: get90sTimestamp(), // Use full time string
+                        isRead: false,
+                        isSent: false
+                    };
+
+                    receivedEmails.unshift(newEmail);
+                    showNotification("[Mailbox] You have new mail!", 'email');
+                    renderEmailList(); 
+                    
+                } else {
+                    console.error("AI failed to generate structured email reply.");
+                }
+
+            } catch (error) {
+                console.error("Error generating AI email reply:", error);
+            }
+        }
+
+        function showNotification(message, type = 'email') { // UPDATED: Accept message and type
+            notificationToast.textContent = message;
+            notificationToast.dataset.notificationType = type; // Store the type
+            notificationToast.style.display = 'block';
+            setTimeout(() => {
+                notificationToast.style.top = '10px'; 
+            }, 10);
+            
+            setTimeout(() => {
+                notificationToast.style.top = '-50px'; 
+            }, 5000); 
+
+            setTimeout(() => {
+                notificationToast.style.display = 'none';
+            }, 5300);
+        }
+
+        async function simulateEmailCheck() {
+            // Only check/fetch new mail 33% of the time the interval runs
+            if (Math.random() < 0.33) {
+                const sender = getRandomSender();
+                
+                // Fetch a unique email from the API
+                const newEmailContent = await fetchNewIncomingEmail(sender.name);
+
+                const newEmail = {
+                    id: receivedEmails.length,
+                    sender: sender.name,
+                    subject: newEmailContent.subject,
+                    body: newEmailContent.body,
+                    time: get90sTimestamp(),
+                    isRead: false,
+                    isSent: false
+                };
+
+                receivedEmails.unshift(newEmail); 
+                showNotification("[Mailbox] You have new mail!", 'email');
+                renderEmailList(); 
+            }
+        }
+        
+        function renderEmailList() {
+            emailList.innerHTML = '';
+            let unreadCount = 0;
+
+            if (receivedEmails.length === 0) {
+                 emailList.innerHTML = '<div style="padding: 10px; color: #808080;">The Inbox is empty. Time to send some ICQ messages instead!</div>';
+            }
+
+            receivedEmails.forEach(email => {
+                const div = document.createElement('div');
+                
+                let statusClass = '';
+                if (email.isSent) {
+                    statusClass = 'sent';
+                } else if (!email.isRead) {
+                    statusClass = 'unread';
+                    unreadCount++;
+                }
+
+                div.className = `email-list-item ${statusClass}`;
+                
+                const displayUser = email.isSent ? email.recipient : email.sender;
+                
+                const indicatorColor = email.isSent ? '#808080' : (email.isRead ? '#000' : '#FF0000');
+                const indicatorText = email.isSent ? '»' : (email.isRead ? '' : '•');
+
+                div.innerHTML = `
+                    <span style="color: ${indicatorColor}; margin-right: 5px;">${indicatorText}</span>
+                    <span style="color: #008080;">${email.isSent ? 'To: ' : ''}${displayUser}</span>: ${email.subject}
+                `;
+                div.onclick = () => viewEmail(email.id);
+                emailList.appendChild(div);
+            });
+
+            emailTitle.textContent = `Mailbox - Inbox (${unreadCount} Unread)`;
+        }
+
+        function viewEmail(emailId) {
+            const email = receivedEmails.find(e => e.id === emailId);
+            if (!email) return;
+            
+            replyToEmail = email; 
+
+            if (!email.isRead) {
+                email.isRead = true;
+                renderEmailList();
+            }
+            
+            // Use the stored email.time property directly
+            const fullTime = email.time; 
+            
+            const fromLine = email.isSent ? `<strong>To:</strong> ${email.recipient}` : `<strong>From:</strong> ${email.sender}`;
+            const toLine = email.isSent ? `<strong>From:</strong> ${GUEST_USER.name}` : `<strong>To:</strong> ${GUEST_USER.name}`;
+
+            emailDetailPane.innerHTML = `
+                <div class="email-detail-header">
+                    ${fromLine}<br>
+                    ${toLine}<br>
+                    <strong>Subject:</strong> ${email.subject}<br>
+                    <strong>Date:</strong> ${fullTime}
+                </div>
+                <div style="white-space: pre-wrap; margin-bottom: 15px;">${email.body}</div>
+                
+                ${!email.isSent ? `<div style="text-align: right;">
+                    <button class="enter-button" style="width: 100px; height: 25px; font-size: 12px; line-height: 20px;" onclick="openCompose(replyToEmail)">
+                        Reply
+                    </button>
+                </div>` : ''}
+            `;
+        }
+
+
+        function closeEmail() {
+            emailWindow.style.display = 'none';
+        }
+
+        // --- MESSAGE BOARD LOGIC (NEW BUMP/DOWN & SORTING) ---
+        
+        async function fetchAIReply(thread) {
+            const potentialResponders = USER_POOL.filter(u => u.name !== thread.author && u.name !== GUEST_USER.name && u.name !== 'AdminBot');
+            const responder = getRandomItem(potentialResponders) || getRandomSender();
+            
+            const payload = {
+                contents: [{ parts: [{ text: `Generate a short reply for the message board thread titled "${thread.subject}".` }] }],
+                systemInstruction: { parts: [{ text: getBoardReplyPrompt(thread) }] },
+            };
+            
+            try {
+                const result = await exponentialBackoffFetch(payload);
+                const body = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+                if (body) {
+                    return {
+                        author: responder.name,
+                        date: get90sTimestamp(),
+                        content: body,
+                        isNew: true
+                    };
+                }
+            } catch (error) {
+                console.error("Error fetching AI board reply:", error);
+            }
+            return null;
+        }
+
+        async function simulateNewReply() {
+            // Filter threads that haven't been replied to much, or the latest post is old
+            const activeThreads = messageBoardPosts.filter(p => p.replies.length < 5);
+            if (activeThreads.length === 0) return;
+
+            const threadToReply = getRandomItem(activeThreads);
+            const newReply = await fetchAIReply(threadToReply);
+
+            if (newReply) {
+                threadToReply.replies.push(newReply);
+                threadToReply.isNew = true; // Mark the main thread as having new activity
+
+                // If the user is currently viewing the list or this specific thread, update the view
+                if (messageBoardWindow.style.display !== 'none') {
+                    // Check if list view is visible
+                    if (boardList.parentNode.style.display !== 'none') {
+                        renderMessageBoardList(); // Update the list view (shows NEW! indicator)
+                    } 
+                    // Check if compose view is visible (don't update the thread detail while composing)
+                    else if (boardComposeView.style.display === 'none' && currentViewingThreadId === threadToReply.id) { 
+                        // Re-render the detail view to show the new reply
+                        viewMessageBoardThread(threadToReply.id);
+                    }
+                }
+                
+                showNotification(`[Board] New reply in thread: ${threadToReply.subject.substring(0, 30)}...`, 'board'); 
+            }
+        }
+        
+        /**
+         * NEW: Simulates a random user bumping or moving down a thread.
+         */
+        async function simulateThreadInteraction() {
+            if (messageBoardPosts.length === 0) return;
+
+            const threadToTarget = getRandomItem(messageBoardPosts);
+            // 70% chance to bump, 30% to move down (simulating general positive feedback)
+            const action = Math.random() < 0.7 ? 'bump' : 'down'; 
+
+            if (action === 'bump') {
+                threadToTarget.bumps = (threadToTarget.bumps || 0) + 1;
+                // Optionally notify about popular bump
+                if (threadToTarget.bumps % 5 === 0) {
+                    showNotification(`[Board Buzz] ${threadToTarget.author}'s thread '${threadToTarget.subject.substring(0, 20)}...' just got BUMPED!`, 'board');
+                }
+            } else {
+                threadToTarget.downs = (threadToTarget.downs || 0) + 1;
+            }
+
+            // Re-render if the board list is open (needed to show score changes and re-sort)
+            if (messageBoardWindow.style.display !== 'none' && boardList.parentNode.style.display !== 'none') {
+                renderMessageBoardList();
+            }
+        }
+        
+        /**
+         * NEW: Handles user's manual bump or move down action on a thread.
+         * @param {number} postId - The ID of the post to affect.
+         * @param {'bump'|'down'} type - The action type.
+         */
+        function bumpThread(postId, type) {
+            const post = messageBoardPosts.find(p => p.id === postId);
+            if (!post) return;
+            
+            if (type === 'bump') {
+                post.bumps = (post.bumps || 0) + 1;
+                showNotification(`[Board] You BUMPED thread: ${post.subject.substring(0, 20)}...`, 'board');
+            } else if (type === 'down') {
+                post.downs = (post.downs || 0) + 1;
+                showNotification(`[Board] You MOVED DOWN thread: ${post.subject.substring(0, 20)}...`, 'board');
+            }
+
+            // Re-render to update the score and re-sort the list immediately
+            renderMessageBoardList();
+        }
+        
+        // Renamed function to be clearer (generates a new top-level thread)
+        async function generateNewThread() {
+            const sender = getRandomSender();
+            // Fetch content from API
+            const content = await fetchNewBoardThread(sender.name);
+            
+            // Get unique IDs by finding the max existing ID
+            const newPostId = messageBoardPosts.reduce((max, post) => Math.max(max, post.id), 0) + 1;
+
+            const newPost = {
+                id: newPostId,
+                subject: content.subject,
+                author: sender.name,
+                date: get90sTimestamp(),
+                views: 1,
+                isNew: true,
+                content: content.content,
+                replies: [], // Initialize replies array
+                bumps: 0, // NEW
+                downs: 0 // NEW
+            };
+
+            messageBoardPosts.unshift(newPost); // Add to the beginning
+            
+            // If the message board is visible, update the list display
+            if (messageBoardWindow.style.display !== 'none' && boardList.parentNode.style.display !== 'none') {
+                renderMessageBoardList();
+            }
+            
+            // Show a general notification
+            showNotification(`[Board] New thread posted: ${newPost.subject.substring(0, 30)}...`, 'board'); 
+        }
+
+
+        function renderMessageBoardList() {
+            currentViewingThreadId = null; // Reset viewed thread state
+            boardDetailPane.style.display = 'none';
+            boardComposeView.style.display = 'none'; // Ensure compose is hidden
+            boardPostView.style.display = 'block'; 
+            boardList.parentNode.style.display = 'block';
+            backToListBtn.style.display = 'none';
+            document.getElementById('new-thread-btn').style.display = 'block'; // Ensure New Thread button is visible
+            boardTitle.textContent = "THE VOID Message Board - Forums";
+            
+            boardList.innerHTML = '';
+            
+            if (messageBoardPosts.length === 0) {
+                 boardList.innerHTML = '<div style="padding: 10px; color: #808080;">Loading initial threads... Please wait.</div>';
+            }
+
+            // NEW SORT: Sort by calculated score (bumps - downs), then fall back to newest date
+            messageBoardPosts.sort((a, b) => {
+                const scoreA = (a.bumps || 0) - (a.downs || 0);
+                const scoreB = (b.bumps || 0) - (b.downs || 0);
+                
+                if (scoreA !== scoreB) {
+                    return scoreB - scoreA; // Sort by score DESC
+                }
+                // Secondary sort by date DESC
+                return new Date(b.date) - new Date(a.date);
+            });
+
+            messageBoardPosts.forEach(post => {
+                const user = getUserByName(post.author);
+                const div = document.createElement('div');
+                let statusClass = post.isNew ? 'new-post' : '';
+
+                div.className = `board-list-item ${statusClass}`;
+                
+                const indicatorText = post.isNew ? 'NEW!' : post.replies.length; // Show reply count
+                const score = (post.bumps || 0) - (post.downs || 0);
+                const scoreColor = score > 0 ? '#008000' : (score < 0 ? '#8B0000' : '#000080');
+
+                div.innerHTML = `
+                    <div class="board-item-content">
+                        <div class="board-item-details" onclick="viewMessageBoardThread(${post.id})">
+                            <span style="color: ${post.isNew ? '#FF0000' : '#808080'}; margin-right: 5px; font-weight: bold; width: 35px; display: inline-block;">[${indicatorText}]</span>
+                            <span class="avatar" style="color: ${user.color};">${user.avatar}</span>
+                            <span style="color: #000080; flex-shrink: 1; min-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${post.subject}</span> 
+                            <span style="color: #444; font-size: 11px; margin-left: 10px; flex-shrink: 0;">by ${post.author}</span>
+                        </div>
+                        <div class="board-item-controls">
+                            <span style="color: ${scoreColor}; font-weight: bold; margin-right: 5px; font-size: 12px;">Score: ${score}</span>
+                            <button class="enter-button" style="width: 50px; height: 18px; font-size: 10px; line-height: 14px; margin-left: 5px;" 
+                                onclick="event.stopPropagation(); bumpThread(${post.id}, 'bump')">Bump ▲</button>
+                            <button class="enter-button" style="width: 50px; height: 18px; font-size: 10px; line-height: 14px; margin-left: 2px;" 
+                                onclick="event.stopPropagation(); bumpThread(${post.id}, 'down')">Move ▼</button>
+                        </div>
+                    </div>
+                `;
+                // Remove the general onclick on the div to ensure button clicks work correctly
+                // The main content area now has its own onclick handler
+                
+                boardList.appendChild(div);
+            });
+        }
+        
+        // NEW FUNCTION: Opens the view to compose a brand new top-level thread.
+        function openNewThreadCompose() {
+            replyToThreadId = null; // Clear reply context
+            
+            boardDetailPane.style.display = 'none';
+            boardList.parentNode.style.display = 'none';
+            boardComposeView.style.display = 'block';
+            backToListBtn.style.display = 'block'; // Show back button
+            document.getElementById('new-thread-btn').style.display = 'none'; // Hide list button
+            
+            // Configure for NEW THREAD MODE
+            composeModeTitle.textContent = 'Post New Thread';
+            replyToSubject.style.display = 'none'; // Hide subject display for replies
+            boardSubjectInput.style.display = 'block'; // Show new subject input
+            postThreadBtn.style.display = 'block';
+            postReplyBtn.style.display = 'none';
+            
+            boardSubjectInput.value = '';
+            boardReplyBody.value = '';
+            boardSubjectInput.focus();
+        }
+        
+        // NEW FUNCTION: Posts a brand new thread created by the user.
+        function postNewThread() {
+            const subject = boardSubjectInput.value.trim();
+            const body = boardReplyBody.value.trim();
+            
+            if (subject.length < 5 || body.length < 10) {
+                console.error("Thread creation failed: Subject needs 5+ chars, body needs 10+ chars.");
+                return;
+            }
+
+            const newPostId = messageBoardPosts.reduce((max, post) => Math.max(max, post.id), 0) + 1;
+
+            const newPost = {
+                id: newPostId,
+                subject: subject,
+                author: GUEST_USER.name,
+                date: get90sTimestamp(),
+                views: 1,
+                isNew: true,
+                content: body,
+                replies: [],
+                bumps: 0, 
+                downs: 0 
+            };
+
+            messageBoardPosts.unshift(newPost);
+            
+            showNotification(`[Board] Your new thread was posted!`, 'board'); 
+            
+            // Go back to the list view immediately
+            renderMessageBoardList(); 
+        }
+        
+        // NEW FUNCTION: Open the compose view (for replies)
+        function openBoardCompose(threadId) {
+            const post = messageBoardPosts.find(p => p.id === threadId);
+            if (!post) return;
+            
+            replyToThreadId = threadId;
+
+            boardDetailPane.style.display = 'none';
+            boardList.parentNode.style.display = 'none';
+            boardComposeView.style.display = 'block';
+            backToListBtn.style.display = 'block'; // Show back button
+            document.getElementById('new-thread-btn').style.display = 'none'; // Hide list button
+
+
+            // Configure for REPLY MODE
+            composeModeTitle.textContent = 'Replying to';
+            replyToSubject.style.display = 'inline';
+            boardSubjectInput.style.display = 'none'; // Hide new subject input
+            postThreadBtn.style.display = 'none';
+            postReplyBtn.style.display = 'block';
+
+            replyToSubject.textContent = post.subject;
+            boardReplyBody.value = '';
+            boardReplyBody.focus();
+        }
+        
+        // NEW FUNCTION: Post the user's reply (unchanged logic, only button ID references changed)
+        function postBoardReply() {
+            const body = boardReplyBody.value.trim();
+            const thread = messageBoardPosts.find(p => p.id === replyToThreadId);
+
+            if (!body || !thread) {
+                console.error("Reply body missing or thread ID invalid.");
+                return;
+            }
+
+            const newReply = {
+                author: GUEST_USER.name,
+                date: get90sTimestamp(),
+                content: body,
+                isNew: false // User's own post is immediately read
+            };
+
+            thread.replies.push(newReply);
+            thread.isNew = true; // Mark thread as having recent activity
+
+            // Clear state and return to thread view
+            boardReplyBody.value = '';
+            replyToThreadId = null;
+            viewMessageBoardThread(thread.id); // Re-render the thread with the new reply
+        }
+
+
+        function viewMessageBoardThread(postId) {
+            const post = messageBoardPosts.find(p => p.id === postId);
+            if (!post) return;
+
+            post.isNew = false; // Mark the thread as read
+            currentViewingThreadId = postId; // Track the viewed thread
+
+            boardList.parentNode.style.display = 'none'; // Hide list pane
+            boardComposeView.style.display = 'none'; // Hide compose view
+            boardDetailPane.style.display = 'block'; // Show detail pane
+            backToListBtn.style.display = 'block';
+            document.getElementById('new-thread-btn').style.display = 'none'; // Hide New Thread button
+
+
+            boardTitle.textContent = `THE VOID - Thread: ${post.subject.substring(0, 50)}...`;
+
+            // --- ROOT POST RENDERING ---
+            const postUser = getUserByName(post.author);
+
+            let threadHTML = `
+                <div class="thread-root">
+                    <div style="font-size: 16px; font-weight: bold; color: #8B0000; margin-bottom: 10px;">
+                        ${post.subject}
+                    </div>
+                    <div style="font-size: 12px; color: #2F4F4F; margin-bottom: 15px; padding-bottom: 5px; border-bottom: 1px dashed #C0C0C0;">
+                        Posted by <span class="avatar" style="color: ${postUser.color};">${postUser.avatar}</span>
+                        <span style="font-weight: bold; color: #000080;">${post.author}</span> on ${post.date}
+                    </div>
+                    <div style="white-space: pre-wrap; font-size: 14px;">${replaceEmoticons(post.content)}</div>
+                </div>
+                <div style="font-weight: bold; margin-bottom: 10px;">Replies (${post.replies.length}):</div>
+            `;
+            post.views++; // Simulate a view increase
+
+            // --- REPLIES RENDERING ---
+            let repliesHTML = '';
+            post.replies.forEach(reply => {
+                const replyUser = getUserByName(reply.author);
+                const newIndicator = reply.isNew ? '<span style="color: #FF0000; font-weight: bold; margin-left: 10px;">(NEW!)</span>' : '';
+                
+                // Mark as read after rendering
+                reply.isNew = false; 
+
+                repliesHTML += `
+                    <div class="thread-reply">
+                        <div style="font-size: 12px; color: #444;">
+                            Posted by 
+                            <span class="avatar" style="color: ${replyUser.color};">${replyUser.avatar}</span>
+                            <span style="font-weight: bold; color: ${replyUser.color};">${reply.author}</span> on ${reply.date} ${newIndicator}
+                        </div>
+                        <div style="white-space: pre-wrap; margin-top: 5px; margin-left: 15px;">
+                            ${replaceEmoticons(reply.content)}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            boardDetailPane.innerHTML = threadHTML + repliesHTML + `
+                <br>
+                <div style="text-align: right; margin-top: 10px;">
+                    <button class="enter-button" style="width: 120px; height: 25px; font-size: 12px; line-height: 20px;" onclick="openBoardCompose(${post.id})">
+                        Reply to Thread
+                    </button>
+                </div>
+                <div style="text-align: center; font-style: italic; color: #808080;">-- End of Thread --</div>
+            `;
+            
+            boardDetailPane.scrollTop = boardDetailPane.scrollHeight; // Scroll to bottom to see latest reply
+        }
+
+
+        // --- SCREENSAVER CUSTOMIZATION LOGIC (UPDATED) ---
+        
+        // NEW: Function to apply the chosen background style
+        function updateDesktopStyle(style) {
+            currentBackgroundStyle = style;
+            
+            // Reset background classes and properties
+            body.classList.remove('cosmic-wallpaper', 'geometric-wallpaper');
+            body.style.backgroundColor = '';
+            body.style.backgroundImage = '';
+            
+            if (style === 'classic-teal') {
+                body.style.backgroundColor = backgroundColorInput.value;
+                // Enable color picker for custom color selection in this mode
+                backgroundColorInput.disabled = false;
+            } else if (style === 'cosmic-wallpaper') {
+                body.classList.add('cosmic-wallpaper');
+                backgroundColorInput.disabled = true; // Disable color picker
+            } else if (style === 'geometric-wallpaper') {
+                body.classList.add('geometric-wallpaper');
+                backgroundColorInput.disabled = true; // Disable color picker
+            }
+        }
+        
+        // NEW: Function to handle the custom color picker (only active for classic-teal mode)
+        function updateDesktopColor(color) {
+            currentBackgroundColor = color;
+            if (currentBackgroundStyle === 'classic-teal') {
+                body.style.backgroundColor = color;
+            }
+        }
+
+        // Function to handle the checkbox toggle
+        function updateScreensaverEnabled(isEnabled) {
+            screensaverEnabled = isEnabled;
+            resetScreensaverTimer(); // Reset the timer logic based on new state
+        }
+        
+        // Function to handle the time selection
+        function updateInactivityTime(value) {
+            inactivityTimeMs = parseInt(value, 10);
+            resetScreensaverTimer(); // Reset timer with new duration
+        }
+        
+        function updateScreensaverType(type) {
+            currentScreensaverType = type;
+            renderScreensaverPreview();
+        }
+        
+        // Stops all screensaver animations
+        function stopScreensaverAnimations() {
+            if (bounceInterval) clearInterval(bounceInterval);
+            if (screensaverCanvas.animationId) cancelAnimationFrame(screensaverCanvas.animationId);
+            if (previewCanvas.animationId) cancelAnimationFrame(previewCanvas.animationId);
+
+            bouncingTextScreensaver.style.display = 'none';
+            screensaverCanvas.style.display = 'none';
+        }
+        
+        // Starts the chosen screensaver animation in the main screensaver div
+        function startScreensaverAnimation() {
+            stopScreensaverAnimations();
+            
+            screensaverCanvas.width = window.innerWidth;
+            screensaverCanvas.height = window.innerHeight - (taskbar.offsetHeight || 30); // Use 30 as a safe fallback
+            
+            if (currentScreensaverType === 'bouncing-text') {
+                bouncingTextScreensaver.style.display = 'block';
+                bounceInterval = setInterval(runScreensaver, 50);
+            } else if (currentScreensaverType === 'flying-windows') {
+                screensaverCanvas.style.display = 'block';
+                startFlyingWindows(screensaverCanvas, screensaverCanvas.getContext('2d'), 50);
+            } else if (currentScreensaverType === 'starfield') {
+                 screensaverCanvas.style.display = 'block';
+                 startStarfield(screensaverCanvas, screensaverCanvas.getContext('2d'), 150);
+            }
+        }
+        
+        // Renders a static preview in the Display Properties window
+        function renderScreensaverPreview() {
+            const ctx = previewCanvas.getContext('2d');
+            const width = previewCanvas.width;
+            const height = previewCanvas.height;
+            
+            // Clear all previous animation frames for the preview
+            if (previewCanvas.animationId) cancelAnimationFrame(previewCanvas.animationId);
+
+            // Hide text/canvas elements
+            previewText.style.display = 'none';
+            previewCanvas.style.display = 'none';
+            
+            ctx.clearRect(0, 0, width, height);
+
+            if (currentScreensaverType === 'bouncing-text') {
+                previewText.textContent = "Bouncing Text";
+                previewText.style.display = 'block';
+            } else if (currentScreensaverType === 'flying-windows') {
+                previewCanvas.style.display = 'block';
+                startFlyingWindows(previewCanvas, ctx, 15, true); // Fewer windows for preview
+            } else if (currentScreensaverType === 'starfield') {
+                previewCanvas.style.display = 'block';
+                startStarfield(previewCanvas, ctx, 30, true); // Fewer stars for preview
+            }
+        }
+        
+        // --- SCREENSAVER IMPLEMENTATIONS (Unchanged) ---
+        
+        // 1. Bouncing Text (runScreensaver is defined globally for the main element)
+
+        // 2. Flying Windows Screensaver
+        let windows = [];
+        
+        function drawWindow(ctx, x, y, size) {
+            const s = size;
+            // Draw window frame (classic Win95 colors)
+            ctx.fillStyle = '#C0C0C0'; // Gray
+            ctx.fillRect(x, y, s, s);
+
+            // Inner dark square
+            ctx.fillStyle = '#000000'; // Black
+            ctx.fillRect(x + s * 0.1, y + s * 0.1, s * 0.8, s * 0.8);
+
+            // Title bar (blue)
+            ctx.fillStyle = '#000080'; // Dark Blue
+            ctx.fillRect(x + s * 0.1, y + s * 0.1, s * 0.8, s * 0.2);
+
+            // Icon (white/red)
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(x + s * 0.15, y + s * 0.15, s * 0.1, s * 0.1);
+            ctx.fillStyle = '#FF0000';
+            ctx.fillRect(x + s * 0.75, y + s * 0.15, s * 0.1, s * 0.1); 
+        }
+
+        function createWindows(count, width, height) {
+            windows = [];
+            for (let i = 0; i < count; i++) {
+                windows.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    size: 20 + Math.random() * 20,
+                    vx: (Math.random() - 0.5) * 2, // Velocity X
+                    vy: (Math.random() - 0.5) * 2  // Velocity Y
+                });
+            }
+        }
+
+        function animateFlyingWindows(canvas, ctx) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            windows.forEach(win => {
+                win.x += win.vx;
+                win.y += win.vy;
+
+                // Boundary check
+                if (win.x < -win.size) win.x = canvas.width;
+                if (win.x > canvas.width) win.x = -win.size;
+                if (win.y < -win.size) win.y = canvas.height;
+                if (win.y > canvas.height) win.y = -win.size;
+
+                drawWindow(ctx, win.x, win.y, win.size);
+            });
+
+            canvas.animationId = requestAnimationFrame(() => animateFlyingWindows(canvas, ctx));
+        }
+
+        function startFlyingWindows(canvas, ctx, count, isPreview = false) {
+            createWindows(count, canvas.width, canvas.height);
+            animateFlyingWindows(canvas, ctx);
+            
+            // If it's the main screensaver, ensure the correct context is set
+            if (!isPreview) screensaverCanvas.style.backgroundColor = '#000000';
+        }
+
+        // 3. Starfield Screensaver
+        let stars = [];
+
+        function createStars(count, width, height) {
+            stars = [];
+            for (let i = 0; i < count; i++) {
+                stars.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    z: Math.random() * width, // Depth
+                    size: Math.random() * 2 + 1,
+                });
+            }
+        }
+
+        function animateStarfield(canvas, ctx) {
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#FFFFFF';
+
+            const center_x = canvas.width / 2;
+            const center_y = canvas.height / 2;
+            const speed = 0.5;
+
+            stars.forEach(star => {
+                star.z -= speed;
+
+                if (star.z <= 0) {
+                    star.z = canvas.width;
+                    star.x = Math.random() * canvas.width;
+                    star.y = Math.random() * canvas.height;
+                }
+
+                const k = 128 / star.z;
+                const x = center_x + (star.x - center_x) * k;
+                const y = center_y + (star.y - center_y) * k;
+                const size = star.size * k / 5;
+
+                ctx.fillRect(x, y, size, size);
+            });
+
+            canvas.animationId = requestAnimationFrame(() => animateStarfield(canvas, ctx));
+        }
+
+        function startStarfield(canvas, ctx, count, isPreview = false) {
+            createStars(count, canvas.width, canvas.height);
+            animateStarfield(canvas, ctx);
+            
+            if (!isPreview) screensaverCanvas.style.backgroundColor = '#000000';
+        }
+        
+        // --- CHAT AND USER SIMULATION LOGIC (UPDATED MAX_USERS) ---
+        
+        function simulateJoinLeave() {
+            const action = Math.random() < 0.5 ? 'join' : 'leave';
+            const currentOnlineNames = onlineUsers.map(u => u.name);
+            const MAX_USERS = 25; // UPDATED: Maximum users online at once
+            const MIN_USERS = 3;
+
+            if (action === 'join' && onlineUsers.length < MAX_USERS) {
+                // Filter USER_POOL, excluding AdminBot, GuestUser, and currently online users
+                const offlineUsers = USER_POOL.filter(u => u.name !== 'AdminBot' && u.name !== GUEST_USER.name && !currentOnlineNames.includes(u.name));
+                if (offlineUsers.length > 0) {
+                    const newUser = getRandomItem(offlineUsers);
+                    onlineUsers.push(newUser);
+                    addMessage('AdminBot', `*** ${newUser.name} has entered the chat. ***`, ADMIN_BOT.color, 'model'); // Log to history
+                }
+            } else if (action === 'leave' && onlineUsers.length > MIN_USERS) {
+                const userToLeaveIndex = Math.floor(Math.random() * onlineUsers.length);
+                const userToLeave = onlineUsers[userToLeaveIndex];
+
+                if (userToLeave.name === GUEST_USER.name) return; 
+
+                onlineUsers.splice(userToLeaveIndex, 1);
+                addMessage('AdminBot', `*** ${userToLeave.name} has left the chat. (Connection Dropped) ***`, ADMIN_BOT.color, 'model'); // Log to history
+            }
+            renderUserList();
+        }
+
+        function renderUserList() {
+            userList.innerHTML = '';
+            
+            // Ensure GUEST_USER is always displayed first
+            const guestUserElement = document.createElement('div');
+            guestUserElement.className = 'user-online';
+            guestUserElement.style.color = GUEST_USER.color;
+            guestUserElement.textContent = `[${GUEST_USER.name}] (You)`;
+            userList.appendChild(guestUserElement);
+            
+            // Then list all other online users
+            onlineUsers.filter(u => u.name !== GUEST_USER.name && u.name !== 'AdminBot').forEach(user => {
+                const div = document.createElement('div');
+                div.className = 'user-online';
+                div.style.color = user.color;
+                div.textContent = `[${user.name}]`;
+                // ADDED: Click handler to open Direct Message window
+                div.onclick = () => openDM(user.name); 
+                userList.appendChild(div);
+            });
+            userListTitle.textContent = `Online Users (${onlineUsers.length + 1})`; // +1 for GuestUser
+        }
+        
+        function renderRoomSelector() {
+            roomSelect.innerHTML = '';
+            CHAT_ROOMS.forEach(room => {
+                const option = document.createElement('option');
+                option.value = room.id;
+                option.textContent = room.name;
+                if (room.id === currentRoomId) {
+                    option.selected = true;
+                }
+                roomSelect.appendChild(option);
+            });
+        }
+        
+        function updateTitles() {
+            const room = CHAT_ROOMS.find(r => r.id === currentRoomId);
+            mainTitle.textContent = `~ ${room.name} ~ Chat Log`;
+        }
+        
+        function switchRoom(newRoomId) {
+            if (currentRoomId === newRoomId) return;
+            
+            // Stop current intervals
+            clearInterval(aiInterval);
+            clearInterval(triviaInterval);
+            aiInterval = null;
+            triviaInterval = null;
+            isGameMode = false;
+            currentAnswer = null; // Clear answer state
+
+            currentRoomId = newRoomId;
+            dialogueQueue = []; 
+            chatLog.innerHTML = ''; 
+            chatHistory = []; // NEW: Reset history on room switch
+            
+            updateTitles();
+            
+            const room = CHAT_ROOMS.find(r => r.id === currentRoomId);
+            addMessage('AdminBot', `*** You have entered the ${room.name} chatroom (Topic: ${room.topic}) ***`, ADMIN_BOT.color, 'model'); // Log to history
+            
+            if (currentRoomId === 'gameshow') {
+                // Start game logic
+                isGameMode = true;
+                currentTriviaIndex = Math.floor(Math.random() * TRIVIA_QUESTIONS.length); // Start with a random question
+                triviaInterval = setInterval(triviaGameLoop, 2000); // Fast initial tick
+            } else {
+                // Start regular chat logic
+                fetchAIConversation();
+                aiInterval = setInterval(postNextAIMessage, 4000 + Math.random() * 4000);
+            }
+        }
+        
+        // --- TRIVIA GAME LOGIC (Unchanged) ---
+        
+        let triviaState = 'WAIT_FOR_Q'; // WAITING_FOR_ANSWER, COOLDOWN, WAIT_FOR_Q
+        let gameTimer = null;
+        let incorrectGuessesPosted = 0;
+
+        function triviaGameLoop() {
+            if (!isGameMode) return;
+
+            if (triviaState === 'WAIT_FOR_Q') {
+                // Phase 1: Post Question
+                const q = TRIVIA_QUESTIONS[currentTriviaIndex];
+                currentAnswer = q.answer.toLowerCase();
+                isAnswered = false;
+                
+                addMessage('AdminBot', `TRIVIA HOST: New Question! ${q.question}`, ADMIN_BOT.color, 'model');
+                
+                triviaState = 'WAITING_FOR_ANSWER';
+                incorrectGuessesPosted = 0;
+                // Set a short delay for the first simulated incorrect guess
+                setTimeout(postIncorrectGuess, 3000); 
+                
+                // Set a longer timer for the simulated user to eventually answer it if the human user doesn't.
+                gameTimer = setTimeout(() => {
+                    if (currentAnswer !== null) {
+                        simulateAnswer(q.answer, true);
+                    }
+                }, 25000); // 25 seconds for the bot to cheat/answer
+                
+            } else if (triviaState === 'WAITING_FOR_ANSWER') {
+                // Phase 2: Post more incorrect guesses
+                 if (Math.random() < 0.5 && incorrectGuessesPosted < 3) {
+                     postIncorrectGuess();
+                 }
+                 
+            } else if (triviaState === 'COOLDOWN') {
+                // Phase 3: Transition to next question
+                clearTimeout(gameTimer); // Clear any pending simulated answer
+                gameTimer = null;
+                
+                // Move to the next question (circular array)
+                currentTriviaIndex = (currentTriviaIndex + 1) % TRIVIA_QUESTIONS.length;
+                
+                addMessage('AdminBot', 'TRIVIA HOST: Next question coming up in 5 seconds! Get ready!', ADMIN_BOT.color, 'model');
+                
+                triviaState = 'WAIT_FOR_Q';
+            }
+            // Use a short interval for quick state checks
+            if (triviaState !== 'COOLDOWN') {
+                 setTimeout(triviaGameLoop, 1500 + Math.random() * 500);
+            }
+        }
+        
+        function postIncorrectGuess() {
+            if (isAnswered || currentAnswer === null) return;
+
+            const q = TRIVIA_QUESTIONS[currentTriviaIndex];
+            const incorrectAnswer = getRandomItem(q.wrong);
+            
+            const responder = getRandomSender();
+            addMessage(responder.name, `${incorrectAnswer} :P`, responder.color, 'model');
+            incorrectGuessesPosted++;
+            
+            // Post another guess after a random delay
+            if (incorrectGuessesPosted < 3) {
+                 setTimeout(postIncorrectGuess, 3000 + Math.random() * 2000); 
+            }
+        }
+        
+        function simulateAnswer(correctAnswer, isSimulatedWin) {
+             if (currentAnswer === null) return; 
+
+             const winner = isSimulatedWin ? getRandomSender().name : GUEST_USER.name;
+             
+             // Post the winning message
+             if (isSimulatedWin) {
+                 addMessage(winner, correctAnswer, getRandomSender().color, 'model');
+             }
+
+             // Announce winner
+             addMessage('AdminBot', `TRIVIA HOST: **DING DING DING!** ${winner} got it! The correct answer was: **${correctAnswer}**!`, ADMIN_BOT.color, 'model');
+             
+             currentAnswer = null; // Clear answer state
+             isAnswered = true;
+             triviaState = 'COOLDOWN';
+             
+             // Wait 5 seconds before asking the next question
+             setTimeout(triviaGameLoop, 5000); 
+        }
+
+        /**
+         * Adds a message to the chat log and updates chat history for AI context.
+         * @param {string} username The name of the user posting the message.
+         * @param {string} message The message content.
+         * @param {string} color The user's color.
+         * @param {string} [role='user'] The role for the history ('user' or 'model').
+         */
+        function addMessage(username, message, color = '#0000FF', role = 'user') {
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message-line';
+            const processedMessage = replaceEmoticons(message); 
+
+            messageElement.innerHTML = `[${time}] &lt;<span class="username" style="color: ${color};">${username}</span>&gt; ${processedMessage}`;
+
+            chatLog.appendChild(messageElement);
+            chatLog.scrollTop = chatLog.scrollHeight;
+            
+            // --- HISTORY LOGGING ---
+            const historyRole = (username === GUEST_USER.name || role === 'user') ? 'user' : 'model';
+            
+            // Format history entry
+            chatHistory.push({
+                role: historyRole,
+                parts: [{ text: `${username}: ${message}` }]
+            });
+
+            // Trim history to limit token usage
+            if (chatHistory.length > CHAT_HISTORY_LIMIT) {
+                // Keep the last CHAT_HISTORY_LIMIT messages
+                chatHistory = chatHistory.slice(-CHAT_HISTORY_LIMIT);
+            }
+            // --- END HISTORY LOGGING ---
+        }
+
+        function postNextAIMessage() {
+            if (dialogueQueue.length > 0) {
+                const rawLine = dialogueQueue.shift();
+                const match = rawLine.match(/^(\w+): (.*)/);
+
+                if (match) {
+                    const username = match[1].trim();
+                    const message = match[2].trim();
+                    const user = getUserByName(username); 
+
+                    if (user) {
+                        addMessage(username, message, user.color, 'model'); // Log to history
+                    } else if (username === 'AdminBot') {
+                         addMessage('AdminBot', message, ADMIN_BOT.color, 'model'); // Log to history
+                    } else {
+                        addMessage(username, message, '#0000FF', 'model'); // Log to history
+                    }
+                }
+                if (dialogueQueue.length < 3 && !isFetching) {
+                    fetchAIConversation();
+                }
+            } else if (!isFetching) {
+                 fetchAIConversation();
+            }
+        }
+
+        function postUserMessage() {
+            const messageText = inputMessage.value.trim();
+            if (messageText && !inputMessage.disabled) {
+                // Add message to log and history
+                addMessage(GUEST_USER.name, messageText, GUEST_USER.color, 'user');
+                inputMessage.value = '';
+                
+                // --- TRIVIA CHECK ---
+                if (isGameMode && currentAnswer !== null) {
+                    if (messageText.toLowerCase().includes(currentAnswer)) {
+                        simulateAnswer(TRIVIA_QUESTIONS[currentTriviaIndex].answer, false); // User wins
+                        return; // Stop processing, question answered
+                    }
+                    // If wrong, continue below to trigger a standard AI response (maybe a mocking chat member!)
+                }
+                
+                // --- REGULAR CHAT/RESPONSE ---
+                triggerAIResponse(messageText); 
+            }
+        }
+
+        // --- LOGIN LOGIC (UPDATED) ---
+        
+        userScreenNameInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                setUserNameAndStart();
+            }
+        });
+
+        inputMessage.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                postUserMessage();
+            }
+        });
+
+
+        function setUserNameAndStart() {
+            let name = userScreenNameInput.value.trim();
+            
+            // Basic validation
+            if (name.length < 3 || name.length > 15 || !/^[a-zA-Z0-Z0-9_]+$/.test(name)) { // Fixed regex to include all allowed chars
+                userScreenNameInput.value = '';
+                userScreenNameInput.placeholder = "Invalid name! 3-15 chars, letters/numbers/underscore only.";
+                userScreenNameInput.focus();
+                return;
+            }
+            
+            // Check for existing user names (case-insensitive)
+            const existingUserNames = USER_POOL.map(u => u.name.toLowerCase());
+            if (existingUserNames.includes(name.toLowerCase())) {
+                userScreenNameInput.value = '';
+                userScreenNameInput.placeholder = "Name taken! Try another.";
+                userScreenNameInput.focus();
+                return;
+            }
+            
+            // 1. Update the global GUEST_USER object
+            GUEST_USER.name = name;
+            
+            // 2. Assign avatar to GUEST_USER (Find an unused icon)
+            const usedAvatars = new Set(USER_POOL.map(u => u.avatar));
+            const availableAvatar = AVATAR_ICONS.find(icon => !usedAvatars.has(icon)) || '[^]';
+            GUEST_USER.avatar = availableAvatar;
+            
+            // 3. Add the user to the pool for simulation awareness (like email targets)
+            USER_POOL.push(GUEST_USER);
+            
+            // 4. Add the user to the initial online list (if not already present from random logic)
+            if (!onlineUsers.some(u => u.name === GUEST_USER.name)) {
+                onlineUsers.push(GUEST_USER);
+            }
+
+            // 5. HIDE LOGIN SCREEN, SHOW LOADING SCREEN, START CONNECTION SEQUENCE
+            usernamePromptScreen.style.display = 'none';
+            loadingScreen.style.display = 'block';
+
+            // NEW: Play the dial-up sound now that the user has clicked
+            if (dialUpAudio) {
+                // Rewind and attempt to play the audio
+                dialUpAudio.currentTime = 0;
+                dialUpAudio.play().catch(error => {
+                    console.warn("Autoplay error after user click:", error);
+                });
+            }
+
+            currentStep = 0; // Reset step counter
+            setTimeout(simulateLoading, 500); 
+
+            // The rest of the desktop launch happens inside simulateLoading when it completes.
+        }
+
+        // --- LOADING LOGIC (UPDATED) ---
+
+        const LOADING_STEPS = [
+            "Initializing TCP/IP stack...",
+            "Authenticating username and password...",
+            "Verifying modem handshake (V.90 protocol)...",
+            "Loading chat engine components...",
+            "Downloading list of available chat rooms...",
+            "Connecting to central server...",
+            "Establishing secure connection (SSL 1.0)...",
+            "Core components loaded (128 KB of 128 KB complete)..."
+        ];
+        let currentStep = 0;
+
+        function simulateLoading() {
+            const totalSteps = LOADING_STEPS.length;
+            const stepDuration = 500; 
+            let progress = 0;
+
+            const interval = setInterval(() => {
+                if (currentStep < totalSteps) {
+                    loadingMessage.textContent = LOADING_STEPS[currentStep];
+                    progress = Math.min(100, (currentStep / (totalSteps - 1)) * 90); 
+                    progressBarFill.style.width = progress + '%';
+                    currentStep++;
+                } else if (progress < 100) {
+                    progressBarFill.style.width = '100%';
+                    loadingMessage.textContent = "Connection established. Launching Desktop..."; 
+                    progress = 100;
+                } else {
+                    clearInterval(interval);
+                    
+                    // Stop the dial-up sound when loading is complete
+                    if (dialUpAudio) {
+                        dialUpAudio.pause();
+                        dialUpAudio.currentTime = 0; // Rewind for next time
+                    }
+
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                        // Launch the desktop interface when loading is done
+                        taskbar.style.display = 'flex'; 
+                        startPassiveSimulations();
+                        taskbarOpen('main-chat-window'); 
+                        resetScreensaverTimer();
+                    }, 500);
+                }
+            }, stepDuration);
+        }
+        
+        // This function is now simplified and only calls the next step (startDesktop)
+        function startLoading() {
+            // The loading sequence is now triggered by the user's click in setUserNameAndStart().
+            // Call startDesktop immediately to show the login prompt.
+            startDesktop(); 
+        }
+
+        // --- CLOCK LOGIC (Unchanged) ---
+
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('taskbar-time').textContent = timeString;
+        }
+
+        // --- CORE PASSIVE SIMULATIONS (UPDATED) ---
+        
+        function simulateBoardActivity() {
+            // 30% chance for a new thread, 70% chance for a reply
+            if (Math.random() < 0.3) {
+                generateNewThread();
+            } else {
+                simulateNewReply();
+            }
+        }
+        
+        async function startPassiveSimulations() {
+             // 30 to 60 second interval for email checks
+            emailInterval = setInterval(simulateEmailCheck, 30000 + Math.random() * 30000); 
+            
+            // 90 to 180 second interval for board activity (new thread or reply)
+            boardPostInterval = setInterval(simulateBoardActivity, 90000 + Math.random() * 90000); 
+            
+            // 30 to 60 second interval for user interaction (bumps/downs)
+            threadInteractionInterval = setInterval(simulateThreadInteraction, 30000 + Math.random() * 30000); // NEW
+            
+            // NEW: Generate initial board content immediately (4 threads)
+            renderMessageBoardList(); // Render empty/loading message first
+            await Promise.all([
+                generateNewThread(),
+                generateNewThread(),
+                generateNewThread(),
+                generateNewThread()
+            ]);
+            
+            // Re-render list now that posts are loaded
+            renderMessageBoardList();
+            
+            renderEmailList();
+        }
+
+        function stopPassiveSimulations() {
+            clearInterval(emailInterval);
+            clearInterval(boardPostInterval);
+            clearInterval(threadInteractionInterval); // NEW: Clear interaction interval
+        }
+
+        function goToHub() {
+            // Stop all chat/game simulation intervals
+            clearInterval(aiInterval);
+            clearInterval(joinLeaveInterval);
+            clearInterval(triviaInterval); 
+            stopPassiveSimulations(); // Use new function
+            aiInterval = null; 
+            joinLeaveInterval = null;
+            triviaInterval = null;
+            isGameMode = false; 
+            
+            // Hide all application windows
+            mainChatWindow.style.display = 'none';
+            sidebarWindow.style.display = 'none';
+            emailWindow.style.display = 'none';
+            messageBoardWindow.style.display = 'none'; // Hide board window
+            customizationWindow.style.display = 'none'; // Hide customization window
+            
+            // Hide all DM windows
+            activeDMSessions.forEach(session => session.windowElement.remove());
+            activeDMSessions.clear();
+
+            // Reset chat log/queue and users to initial state
+            dialogueQueue = [];
+            chatLog.innerHTML = '';
+            chatHistory = []; // Reset chat history
+            // Re-initialize online users based on the full USER_POOL after GUEST_USER is removed
+            onlineUsers = USER_POOL.filter(u => u.name !== 'AdminBot' && u.name !== GUEST_USER.name).slice(0, 5); 
+            
+            // Reset message board posts for next session
+            messageBoardPosts = [];
+
+            // Show login screen again
+            usernamePromptScreen.style.display = 'block';
+            resetScreensaverTimer(); // Keep the screensaver timer running
+        }
+
+        function startChatLogic() {
+            // This function is only called for all chat rooms EXCEPT gameshow.
+            renderUserList();
+            renderRoomSelector();
+            updateTitles();
+            
+            const initialRoom = CHAT_ROOMS.find(r => r.id === currentRoomId);
+            // Log this welcome message to history, using 'model' role for AdminBot
+            addMessage('AdminBot', `Welcome to The Vortex! You have entered the ${initialRoom.name} chatroom. Connecting via 56k modem... Please wait while users dial in.`, ADMIN_BOT.color, 'model');
+
+            fetchAIConversation();
+
+            // Start the conversation flow (Slow speed: 4.0 to 8.0 seconds)
+            aiInterval = setInterval(postNextAIMessage, 4000 + Math.random() * 4000);
+
+            // Start user join/leave simulation every 5-15 seconds
+            joinLeaveInterval = setInterval(simulateJoinLeave, 5000 + Math.random() * 10000);
+        }
+
+        function startDesktop() {
+            usernamePromptScreen.style.display = 'block';
+            userScreenNameInput.focus();
+            resetScreensaverTimer(); // Start timer after login screen appears
+            
+            // Apply the initial default background style when the desktop environment is initialized
+            updateDesktopStyle(currentBackgroundStyle);
+        }
+
+
+        // --- SCREENSAVER LOGIC (UPDATED FOR TOGGLE/TIME) ---
+
+        function runScreensaver() {
+            if (!screensaverActive) return;
+
+            // Only run the bouncing text logic if it's the active type
+            if (currentScreensaverType === 'bouncing-text') {
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                // Safely get width and height after rendering
+                const textW = bouncingText.offsetWidth || 400; 
+                const textH = bouncingText.offsetHeight || 50;
+                const taskbarH = taskbar.offsetHeight;
+                
+                x_pos += x_dir * speed;
+                y_pos += y_dir * speed;
+
+                if (x_pos + textW > w || x_pos < 0) {
+                    x_dir *= -1;
+                    x_pos = Math.max(0, Math.min(w - textW, x_pos)); 
+                    bouncingText.style.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+                }
+                
+                if (y_pos + textH > (h - taskbarH) || y_pos < 0) {
+                    y_dir *= -1;
+                    y_pos = Math.max(0, Math.min(h - textH - taskbarH, y_pos)); 
+                    bouncingText.style.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+                }
+
+                bouncingText.style.left = x_pos + 'px';
+                bouncingText.style.top = y_pos + 'px';
+            }
+        }
+
+        function showScreensaver() {
+            // Check if screensaver is enabled before showing
+            if (!screensaverEnabled || screensaverActive) return; 
+
+            screensaverActive = true;
+            screensaver.style.display = 'block';
+
+            // Hide application windows
+            document.querySelectorAll('.draggable-window').forEach(win => {
+                if(win.id !== 'screensaver') win.style.display = 'none';
+            });
+            taskbar.style.display = 'none'; 
+            
+            // Set initial bouncing text position to center screen when starting screensaver
+            // This prevents it from jumping around on first activation.
+            const textW = bouncingText.offsetWidth || 400; 
+            const textH = bouncingText.offsetHeight || 50; 
+            x_pos = (window.innerWidth / 2) - (textW / 2);
+            y_pos = (window.innerHeight / 2) - (textH / 2);
+            
+            startScreensaverAnimation();
+            
+            if (currentScreensaverType === 'bouncing-text') {
+                 // Apply the calculated starting position immediately
+                 bouncingText.style.left = x_pos + 'px';
+                 bouncingText.style.top = y_pos + 'px';
+            }
+        }
+
+        function hideScreensaver() {
+            if (!screensaverActive) return;
+            
+            stopScreensaverAnimations(); // Stop all animation loops
+            screensaverActive = false;
+            screensaver.style.display = 'none';
+
+            // Restore the interface based on whether the user has logged in
+            const isLoggedIn = GUEST_USER.name !== 'PLACEHOLDER';
+            
+            if (isLoggedIn) {
+                taskbar.style.display = 'flex';
+                // Bring back the main chat window if it was active when screensaver started (simplification)
+                mainChatWindow.style.display = 'block';
+                sidebarWindow.style.display = 'block';
+            } else {
+                usernamePromptScreen.style.display = 'block';
+            }
+        }
+
+        function resetScreensaverTimer() {
+            if (!GUEST_USER.name || GUEST_USER.name === 'PLACEHOLDER') return; 
+            
+            clearTimeout(screensaverTimeout);
+            hideScreensaver();
+            
+            // Only set a new timeout if the screensaver is enabled
+            if (screensaverEnabled) {
+                screensaverTimeout = setTimeout(showScreensaver, inactivityTimeMs);
+            }
+            
+            // Re-render the preview when applying changes
+            renderScreensaverPreview();
+        }
+
+        function initScreensaverListeners() {
+            document.addEventListener('mousemove', resetScreensaverTimer);
+            document.addEventListener('keypress', resetScreensaverTimer);
+            document.addEventListener('click', resetScreensaverTimer);
+            window.addEventListener('resize', () => {
+                 if (screensaverActive) {
+                    // Re-run animation setup on resize to adjust canvas dimensions
+                    startScreensaverAnimation();
+                 }
+            });
+        }
+        
+        // --- APPLICATION STARTUP (Updated) ---
+
+        function initApp() {
+            // 1. Initialize the user pool, including avatars
+            initializeUserPool();
+            
+            // 2. Make windows draggable (even if they start hidden)
+            makeDraggable(mainChatWindow);
+            makeDraggable(sidebarWindow);
+            makeDraggable(emailWindow);
+            makeDraggable(messageBoardWindow); 
+            makeDraggable(customizationWindow); 
+            
+            // 3. Set initial z-index for stacking
+            mainChatWindow.style.zIndex = zIndexCounter + 1;
+            sidebarWindow.style.zIndex = zIndexCounter;
+            emailWindow.style.zIndex = zIndexCounter + 2; 
+            messageBoardWindow.style.zIndex = zIndexCounter + 3; 
+            customizationWindow.style.zIndex = zIndexCounter + 4; 
+
+            // 4. Set initial screensaver settings based on defaults
+            screensaverEnabled = screensaverEnabledCheckbox.checked;
+            inactivityTimeMs = parseInt(inactivityTimeSelect.value, 10);
+            // Ensure initial background style is applied
+            currentBackgroundStyle = backgroundStyleSelect.value;
+            currentBackgroundColor = backgroundColorInput.value;
+
+            // 5. Start the clock display immediately and update every second
+            updateClock();
+            clockInterval = setInterval(updateClock, 1000);
+            
+            // 6. Initialize screensaver listeners
+            initScreensaverListeners();
+            
+            // 7. Set initial preview
+            updateScreensaverType(screensaverSelect.value);
+
+            // 8. Start the login screen directly
+            startLoading();
+        }
+
+        window.onload = initApp;
+
+    </script>
+</body>
+</html>
